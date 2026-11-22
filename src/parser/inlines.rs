@@ -385,7 +385,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                     && self.peek_byte_n(1) == Some(b'[')
                 {
                     self.handle_inline_footnote(line_offsets)
-                } else if self.options.extension.superscript && self.brackets.is_empty() {
+                } else if self.options.extension.superscript {
                     Some(self.handle_delim(b'^'))
                 } else {
                     // Just regular text
@@ -1679,7 +1679,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         let opener_byte = opener.inl.data().value.text().unwrap().as_bytes()[0];
         let mut opener_num_bytes = opener.inl.data().value.text().unwrap().len();
         let mut closer_num_bytes = closer.inl.data().value.text().unwrap().len();
-        let use_delims = if closer_num_bytes >= 2 && opener_num_bytes >= 2 {
+        let use_delims = if opener_byte != b'^' && closer_num_bytes >= 2 && opener_num_bytes >= 2 {
             2
         } else {
             1
@@ -2136,7 +2136,6 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
     fn is_special_char_at(&self, i: usize) -> bool {
         let bytes = self.input.as_bytes();
         match bytes[i] {
-            b'^' => self.brackets.is_empty(),
             b'w' => bytes[i..].starts_with(b"www."),
             b':' => !self.tables.colon_needs_slashes || bytes[i + 1..].starts_with(b"//"),
             _ => true,
@@ -2301,11 +2300,13 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         let cjk_friendly = self.options.extension.cjk_friendly_emphasis;
         let mut two_before_char: Option<char> = None;
 
+        let ignore_punctuation = (self.options.extension.superscript && b == b'^')
+            || (self.options.extension.subscript && b == b'~' && numdelims == 1);
+
         let left_flanking = numdelims > 0
             && !after_char.is_whitespace()
-            && (!after_char.is_cmark_punctuation()
-                || (self.options.extension.superscript && b == b'^')
-                || (self.options.extension.subscript && b == b'~')
+            && (ignore_punctuation
+                || !after_char.is_cmark_punctuation()
                 || before_char.is_whitespace()
                 || if !cjk_friendly {
                     before_char.is_cmark_punctuation()
@@ -2329,28 +2330,30 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                 });
         let right_flanking = numdelims > 0
             && !before_char.is_whitespace()
-            && (!if !cjk_friendly {
-                before_char.is_cmark_punctuation()
-            } else {
-                !after_char.is_cjk()
-                    && if before_char.is_non_emoji_general_purpose_vs() {
-                        let two_before_char = if let Some(two_before_char_) = two_before_char {
-                            two_before_char_
-                        } else if let Some(before_char_pos) = before_char_pos {
-                            let (two_before_char_, _) = self.get_before_char(before_char_pos);
-                            two_before_char = Some(two_before_char_);
-                            two_before_char_
+            && (ignore_punctuation
+                || !if !cjk_friendly {
+                    before_char.is_cmark_punctuation()
+                } else {
+                    !after_char.is_cjk()
+                        && if before_char.is_non_emoji_general_purpose_vs() {
+                            let two_before_char = if let Some(two_before_char_) = two_before_char {
+                                two_before_char_
+                            } else if let Some(before_char_pos) = before_char_pos {
+                                let (two_before_char_, _) = self.get_before_char(before_char_pos);
+                                two_before_char = Some(two_before_char_);
+                                two_before_char_
+                            } else {
+                                '\n'
+                            };
+                            !two_before_char.is_cjk()
+                                && two_before_char.is_cmark_punctuation()
+                                && !(two_before_char.is_cjk_ambiguous_punctuation_candidate()
+                                    && before_char == '\u{fe01}')
                         } else {
-                            '\n'
-                        };
-                        !two_before_char.is_cjk()
-                            && two_before_char.is_cmark_punctuation()
-                            && !(two_before_char.is_cjk_ambiguous_punctuation_candidate()
-                                && before_char == '\u{fe01}')
-                    } else {
-                        !before_char.is_cjk() && before_char.is_cmark_punctuation()
-                    }
-            } || after_char.is_whitespace()
+                            !before_char.is_cjk() && before_char.is_cmark_punctuation()
+                        }
+                }
+                || after_char.is_whitespace()
                 || after_char.is_cmark_punctuation());
 
         if b == b'_' {

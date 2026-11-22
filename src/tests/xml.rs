@@ -108,3 +108,23 @@ fn description_item_tight() {
         |opts| opts.extension.description_lists = true,
     );
 }
+
+#[test]
+fn escaped_tag() {
+    xml_opts(
+        "~~a~~ and ~b~~\n",
+        concat!(
+            "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n",
+            "<!DOCTYPE document SYSTEM \"CommonMark.dtd\">\n",
+            "<document xmlns=\"http://commonmark.org/xml/1.0\">\n",
+            "  <paragraph>\n",
+            "    <escaped_tag tag=\"~~\">\n",
+            "      <text xml:space=\"preserve\">a</text>\n",
+            "    </escaped_tag>\n",
+            "    <text xml:space=\"preserve\"> and ~b~~</text>\n",
+            "  </paragraph>\n",
+            "</document>\n",
+        ),
+        |opts| opts.extension.subscript = true,
+    );
+}

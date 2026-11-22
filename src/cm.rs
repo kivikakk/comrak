@@ -328,6 +328,7 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
                     || c == '`'
                     || c == '~'
                     || c == '!'
+                    || (self.options.extension.superscript && c == '^')
                     || (self.options.extension.autolink && c == '@')
                     || ((self.options.extension.math_dollars
                         || self.options.extension.math_dollars_block
@@ -1818,6 +1819,7 @@ pub fn escape_inline(text: &str) -> String {
             || c == '\\'
             || c == '`'
             || c == '~'
+            || c == '^'
             || c == '!'
             || c == '&'
             || (c == '%' && chars.peek() == Some(&'%'))
