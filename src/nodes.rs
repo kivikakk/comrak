@@ -64,7 +64,7 @@ pub enum NodeValue {
     /// **blocks**.
     Item(NodeList),
 
-    /// **Block**. A description list, enabled with `ext_description_lists` option.  Contains
+    /// **Block**. A description list, enabled with `description_lists` option.  Contains
     /// description items.
     ///
     /// It is required to put a blank line between terms and details.
@@ -190,7 +190,7 @@ pub enum NodeValue {
     /// **Inline**. Inserted text, rendered as `<ins>`.
     Insert,
 
-    /// **Inline**.  Superscript.  Enabled with `ext_superscript` option.
+    /// **Inline**.  Superscript.  Enabled with `superscript` option.
     Superscript,
 
     /// **Inline**.  A [link](https://github.github.com/gfm/#links) to some URL, with possible
