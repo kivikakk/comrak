@@ -385,7 +385,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                     && self.peek_byte_n(1) == Some(b'[')
                 {
                     self.handle_inline_footnote(line_offsets)
-                } else if self.options.extension.superscript && self.brackets.is_empty() {
+                } else if self.options.extension.superscript {
                     Some(self.handle_delim(b'^'))
                 } else {
                     // Just regular text
@@ -2136,7 +2136,6 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
     fn is_special_char_at(&self, i: usize) -> bool {
         let bytes = self.input.as_bytes();
         match bytes[i] {
-            b'^' => self.brackets.is_empty(),
             b'w' => bytes[i..].starts_with(b"www."),
             b':' => !self.tables.colon_needs_slashes || bytes[i + 1..].starts_with(b"//"),
             _ => true,
