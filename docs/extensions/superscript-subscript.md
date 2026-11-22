@@ -10,7 +10,7 @@ Superscript raises text above the baseline, as in an exponent, and subscript low
 
 Comrak's superscript and subscript follow the superscript and subscript extensions of [commonmark-hs](https://github.com/jgm/commonmark-hs/tree/master/commonmark-extensions), which [Pandoc](https://pandoc.org/MANUAL.html#extension-superscript-subscript) also uses.  This document describes both extensions, and [Differences from commonmark-hs](#differences-from-commonmark-hs) lists where they differ.  GitLab Flavored Markdown [doesn't support](https://docs.gitlab.com/user/markdown/#superscripts-and-subscripts) either syntax.
 
-To enable superscript, pass `-e superscript` on the command line, or set `extension.superscript` in the options struct.  For subscript, pass `-e subscript`, or set `extension.subscript`.  `--gfm` doesn't enable either.
+To enable superscript, pass `-e superscript` on the command line, or set `extension.superscript` in the options struct.  For subscript, pass `-e subscript`, or set `extension.subscript`.
 
 Here's typical superscript and subscript:
 

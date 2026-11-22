@@ -6,7 +6,7 @@ An alert is a block quote that calls out its content as a note, a warning, or si
 
 Alerts originate on [GitHub](https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax#alerts), which documents them but doesn't specify them.  This document describes Comrak's alerts, which can differ from GitHub's.  GitLab uses Comrak's alerts, so this document is also the canonical spec for [GitLab Flavored Markdown alerts](https://docs.gitlab.com/user/markdown/#alerts).
 
-To enable alerts, pass `-e alerts` on the command line, or set `extension.alerts` in the options struct.  `--gfm` doesn't enable them.
+To enable alerts, pass `-e alerts` on the command line, or set `extension.alerts` in the options struct.
 
 Here's a typical alert:
 

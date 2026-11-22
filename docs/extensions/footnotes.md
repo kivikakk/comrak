@@ -6,7 +6,7 @@ A footnote is a note that's set apart from the main text.  A numbered mark in th
 
 The [GitHub Flavored Markdown](https://github.github.com/gfm/) spec doesn't describe footnotes, but [cmark-gfm](https://github.com/github/cmark-gfm), its reference implementation, supports them, and Comrak's footnotes follow its design.  This document describes Comrak's footnotes, which can differ from cmark-gfm's.  GitLab uses Comrak's footnotes, so this document is also the canonical spec for [GitLab Flavored Markdown footnotes](https://docs.gitlab.com/user/markdown/#footnotes).
 
-To enable footnotes, pass `-e footnotes` on the command line, or set `extension.footnotes` in the options struct.  `--gfm` doesn't enable them.
+To enable footnotes, pass `-e footnotes` on the command line, or set `extension.footnotes` in the options struct.
 
 Here's a typical footnote:
 

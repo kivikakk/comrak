@@ -7,7 +7,7 @@ A wikilink is a link written the way wikis write them: a page name between doubl
 
 Comrak's wikilinks follow the wikilinks extensions of [commonmark-hs](https://github.com/jgm/commonmark-hs/tree/master/commonmark-extensions), which [Pandoc](https://pandoc.org/MANUAL.html#wikilinks) also uses.  Those extensions come in two flavours, which differ in whether a wikilink's title comes after its page name or before it.  This document describes both, and [Differences from commonmark-hs](#differences-from-commonmark-hs) lists where Comrak parts ways.  GitLab uses Comrak's wikilinks, with the title before the page name, so this document is also the canonical spec for [GitLab Flavored Markdown wikilinks](https://docs.gitlab.com/user/markdown/#gitlab-specific-references).
 
-To enable wikilinks with the title after the page name, pass `-e wikilinks-title-after-pipe` on the command line, or set `extension.wikilinks_title_after_pipe` in the options struct.  For the title before the page name, pass `-e wikilinks-title-before-pipe`, or set `extension.wikilinks_title_before_pipe`.  `--gfm` doesn't enable either.
+To enable wikilinks with the title after the page name, pass `-e wikilinks-title-after-pipe` on the command line, or set `extension.wikilinks_title_after_pipe` in the options struct.  For the title before the page name, pass `-e wikilinks-title-before-pipe`, or set `extension.wikilinks_title_before_pipe`.
 
 Here's a typical wikilink, in each flavour:
 
