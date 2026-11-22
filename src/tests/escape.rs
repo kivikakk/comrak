@@ -100,6 +100,14 @@ fn escape_link_target() {
 }
 
 #[test]
+fn escape_superscript() {
+    assert_escape_inline("^a^", "\\^a\\^");
+    let mut options = Options::default();
+    options.extension.superscript = true;
+    assert_eq!(markdown_to_html("\\^a\\^", &options), "<p>^a^</p>\n");
+}
+
+#[test]
 fn escape_strikethrough() {
     assert_escape_inline("~~text~~", "\\~\\~text\\~\\~");
 }

@@ -116,3 +116,15 @@ fn carets_pair_one_at_a_time() {
         ),
     );
 }
+
+#[test]
+fn commonmark_escapes_literal_carets() {
+    let mut options = Options::default();
+    options.extension.superscript = true;
+    commonmark(
+        "\\^a^ b^c^ d ^ e\n",
+        "\\^a\\^ b^c^ d \\^ e\n",
+        Some(&options),
+    );
+    commonmark("a^b\n", "a^b\n", None);
+}
