@@ -430,6 +430,21 @@ fn pathological_block_ids_nested() {
 
 #[test]
 #[timeout(4000)]
+fn pathological_wikilinks_nested() {
+    let n = 32_000;
+    let input = format!("{} {}\n", ">".repeat(n), "[[a]]".repeat(n));
+    let exp = format!(
+        "{}<p>{}</p>\n{}",
+        "<blockquote>\n".repeat(n),
+        "<a href=\"a\" data-wikilink=\"true\">a</a>".repeat(n),
+        "</blockquote>\n".repeat(n)
+    );
+
+    html_opts!([extension.wikilinks_title_after_pipe], &input, &exp);
+}
+
+#[test]
+#[timeout(4000)]
 fn pathological_header_ids() {
     let n = 20_000;
     let input = "# a\n".repeat(n);

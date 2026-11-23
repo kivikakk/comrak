@@ -92,6 +92,7 @@ struct CommonMarkFormatter<'a, 'o, 'c, 'w> {
     #[cfg(feature = "grid_table")]
     grid_table_indent: usize,
     custom_escape: Option<fn(Node<'a>, char) -> bool>,
+    in_table: bool,
     footnote_ix: u32,
     ol_stack: Vec<usize>,
     allow_wrap: bool,
@@ -136,6 +137,7 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
             #[cfg(feature = "grid_table")]
             grid_table_indent: 0,
             custom_escape: None,
+            in_table: false,
             footnote_ix: 0,
             ol_stack: vec![],
             allow_wrap: options.render.width > 0 && !options.render.hardbreaks,
@@ -1247,9 +1249,6 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
         nl: &NodeWikiLink,
         entering: bool,
     ) -> Result<bool, fmt::Error> {
-        let in_table = node
-            .ancestors()
-            .any(|ancestor| node_matches!(ancestor, NodeValue::Table(..)));
         let title_is_url = node.first_child().is_some_and(|child| {
             child.next_sibling().is_none()
                 && matches!(child.data().value, NodeValue::Text(ref t) if *t == nl.url)
@@ -1264,7 +1263,7 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
                 write!(self, "]]")?;
                 return Ok(false);
             }
-            if !in_table {
+            if !self.in_table {
                 self.custom_escape = Some(wikilink_title_escape);
             }
             if self.options.extension.wikilinks() == Some(WikiLinksMode::UrlFirst) {
@@ -1277,7 +1276,7 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
                 self.output(&nl.url, false, Escaping::WikilinkUrl)?;
             }
             write!(self, "]]")?;
-            if !in_table {
+            if !self.in_table {
                 self.custom_escape = None;
             }
         }
@@ -1375,6 +1374,7 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
     }
 
     fn format_table(&mut self, entering: bool) {
+        self.in_table = entering;
         if entering {
             self.custom_escape = Some(table_escape);
         } else {
