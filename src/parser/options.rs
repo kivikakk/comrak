@@ -201,9 +201,8 @@ pub struct Extension<'c> {
 
     /// Enables the description lists extension.
     ///
-    /// Each term must be defined in one paragraph, followed by a blank line,
-    /// and then by the details.  Details begins with a colon.
-    /// TODO: stale; no blank line is needed, and since #945 the colon follows list marker rules.
+    /// Each term must be defined in one paragraph, and then by the details.
+    /// Details begins with a colon and follows list marker rules.
     ///
     /// ```markdown
     /// First term
