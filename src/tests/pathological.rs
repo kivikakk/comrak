@@ -211,6 +211,26 @@ fn pathological_table_autocompleted_cells() {
 
 // input: python3 -c 'n = 10000; print("[^1]:" * n + "\n" * n)'
 #[test]
+fn pathological_table_autocompleted_cells_across_tables() {
+    let n = 708;
+    let table = format!(
+        "{}a\n{}\n{}\n",
+        "|".repeat(n),
+        "-|".repeat(n),
+        "a\n".repeat(n)
+    );
+    let cells = |tables: usize| {
+        let mut options = Options::default();
+        options.extension.table = true;
+        markdown_to_html(&table.repeat(tables), &options)
+            .matches("<td")
+            .count()
+    };
+
+    assert_eq!(cells(4), cells(1));
+}
+
+#[test]
 #[timeout(4000)]
 fn pathological_footnotes() {
     let n = 10_000;

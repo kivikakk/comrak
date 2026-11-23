@@ -334,6 +334,8 @@ pub struct Parser<'a: 'd, 'o, 'c, 'd> {
     column: usize,
     thematic_break_kill_pos: usize,
     marker_run: Option<MarkerRun>,
+    autocompleted_cells: usize,
+    max_autocompleted_cells: usize,
     first_nonspace: usize,
     first_nonspace_column: usize,
     indent: usize,
@@ -417,6 +419,8 @@ where
             column: 0,
             thematic_break_kill_pos: 0,
             marker_run: None,
+            autocompleted_cells: 0,
+            max_autocompleted_cells: table::MAX_AUTOCOMPLETED_CELLS,
             first_nonspace: 0,
             first_nonspace_column: 0,
             indent: 0,
@@ -459,6 +463,7 @@ where
 
         let end = s.len();
         self.refmap.max_ref_size = end.max(MAX_REF_SIZE_FLOOR);
+        self.max_autocompleted_cells = end.max(table::MAX_AUTOCOMPLETED_CELLS);
 
         let mut ix = 0;
         let matcher = cr_or_lf_matcher();

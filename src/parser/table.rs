@@ -13,9 +13,8 @@ use crate::parser::inlines::make_inline;
 use crate::scanners;
 use crate::strings::{count_newlines, is_line_end_char, is_space_or_tab, newlines_of, trim_cow};
 
-// Limit to prevent a malicious input from causing a denial of service.
-// See get_num_autocompleted_cells.
-const MAX_AUTOCOMPLETED_CELLS: usize = 500_000;
+// Floor for Parser::max_autocompleted_cells.
+pub(crate) const MAX_AUTOCOMPLETED_CELLS: usize = 500_000;
 
 pub fn try_opening_block<'a>(
     parser: &mut Parser<'a, '_, '_, '_>,
@@ -176,7 +175,7 @@ fn try_opening_row<'a>(
         return None;
     }
 
-    if get_num_autocompleted_cells(container) > MAX_AUTOCOMPLETED_CELLS {
+    if parser.autocompleted_cells > parser.max_autocompleted_cells {
         return None;
     }
 
@@ -227,6 +226,7 @@ fn try_opening_row<'a>(
         }
         let cell_node = parser.add_child(new_row, NodeValue::TableCell, last_column + 1);
         cell_node.data_mut().sourcepos.end.column = last_column;
+        parser.autocompleted_cells += 1;
     }
 
     let offset = line.len() - parser.offset - newlines_of(line);
@@ -506,13 +506,10 @@ impl<'a> EscapedPipes<'a> {
     }
 }
 
-// Increment the number of rows in the table. Also update num_nonempty_cells,
+// Increment the number of rows in the table, and update num_nonempty_cells,
 // which keeps track of the number of cells which were parsed from the
 // input file. (If one of the rows is too short, then the trailing cells are
 // autocompleted. Autocompleted cells are not counted in num_nonempty_cells.)
-// The purpose of this is to prevent a malicious input from generating a very
-// large number of autocompleted cells, which could cause a denial of service
-// vulnerability.
 fn adjust_table_counters(container: Node<'_>, i: usize, end: LineColumn) {
     let mut ast = container.data_mut();
     let NodeValue::Table(ref mut nt) = ast.value else {
@@ -521,22 +518,6 @@ fn adjust_table_counters(container: Node<'_>, i: usize, end: LineColumn) {
     nt.num_rows += 1;
     nt.num_nonempty_cells += i;
     ast.sourcepos.end = end;
-}
-
-// Calculate the number of autocompleted cells.
-fn get_num_autocompleted_cells(container: Node<'_>) -> usize {
-    return match container.data().value {
-        NodeValue::Table(ref node_table) => {
-            let num_cells = node_table.num_columns * node_table.num_rows;
-
-            if num_cells < node_table.num_nonempty_cells {
-                0
-            } else {
-                (node_table.num_columns * node_table.num_rows) - node_table.num_nonempty_cells
-            }
-        }
-        _ => 0,
-    };
 }
 
 pub fn matches(line: &str, spoiler: bool) -> bool {
