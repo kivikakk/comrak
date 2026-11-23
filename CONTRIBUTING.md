@@ -27,13 +27,13 @@ not use them to:
 - Write issue or pull request descriptions.
 - Write documentation.
 
-This list isn't exhaustive, and skirting the rules is not tolerated.
-
 If an LLM has played a part in your discovery of a bug, or performance or
 security issue, that's OK — I simply ask that you write the issue, fix, or pull
 request description yourself, by hand. If you do not personally understand what
 you have submitted, you are assisting neither Comrak's maintainers nor yourself
 with your submission.
+
+If you do so anyway — perhaps because you hadn't read the CONTRIBUTING file before opening your issue or pull request — Optimistic Merging does not apply, and I may or may not reply or accept your change, based on whether the change is appropriate, and whether I can detect the presence of a human at the other end.  Comrak is used by many and deserves to be robust; it is also a community effort.
 
 I make an exception for vulnerability reports. If you've found a legitimate
 security issue in Comrak, you may privately submit an LLM-written report. If,
