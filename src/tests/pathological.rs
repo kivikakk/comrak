@@ -601,6 +601,24 @@ fn pathological_multiline_block_quote_marker_run() {
 
 #[test]
 #[timeout(4000)]
+fn pathological_skip_char_flanking_variation_selector() {
+    let n = 40_000;
+    let input = format!("a\u{fe00}{}!", "~=".repeat(n));
+    let exp = format!("<p>{}</p>\n", input);
+
+    html_opts!(
+        [
+            extension.strikethrough,
+            extension.highlight,
+            extension.cjk_friendly_emphasis
+        ],
+        &input,
+        &exp
+    );
+}
+
+#[test]
+#[timeout(4000)]
 fn pathological_header_ids() {
     let n = 20_000;
     let input = "# a\n".repeat(n);

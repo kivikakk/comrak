@@ -140,6 +140,7 @@ pub struct Subject<'a: 'd, 'r, 'o, 'd, 'c, 'p> {
     bracket_closers: Option<FxHashMap<usize, usize>>,
     latex_math_no_closer_from: [usize; 2],
     before_char_walk: Cell<(usize, usize)>,
+    two_before_char_walk: Cell<(usize, usize)>,
     after_char_walk: Cell<(usize, usize)>,
 }
 
@@ -192,6 +193,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             bracket_closers: None,
             latex_math_no_closer_from: [usize::MAX; 2],
             before_char_walk: Cell::new((0, 0)),
+            two_before_char_walk: Cell::new((0, 0)),
             after_char_walk: Cell::new((usize::MAX, 0)),
         }
     }
@@ -2243,11 +2245,11 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         None
     }
 
-    fn get_before_char(&self, pos: usize) -> (char, Option<usize>) {
+    fn get_before_char(&self, pos: usize, walk: &Cell<(usize, usize)>) -> (char, Option<usize>) {
         if pos == 0 {
             return ('\n', None);
         }
-        let (cached_pos, cached_before) = self.before_char_walk.get();
+        let (cached_pos, cached_before) = walk.get();
         let mut before_char_pos = pos - 1;
         loop {
             if before_char_pos + 1 == cached_pos {
@@ -2262,7 +2264,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             }
             before_char_pos -= 1;
         }
-        self.before_char_walk.set((pos, before_char_pos));
+        walk.set((pos, before_char_pos));
         match self.input[before_char_pos..pos].chars().next() {
             Some(x) => {
                 if (x as usize) < 256 && self.tables.skip[x as usize] {
@@ -2299,7 +2301,8 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
     }
 
     fn scan_delims(&mut self, b: u8) -> (usize, bool, bool) {
-        let (before_char, before_char_pos) = self.get_before_char(self.scanner.pos);
+        let (before_char, before_char_pos) =
+            self.get_before_char(self.scanner.pos, &self.before_char_walk);
 
         let mut numdelims = 0;
         if b == b'\'' || b == b'"' {
@@ -2331,7 +2334,8 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                     after_char.is_cjk()
                         || if before_char.is_non_emoji_general_purpose_vs() {
                             if let Some(before_char_pos) = before_char_pos {
-                                let (two_before_char_, _) = self.get_before_char(before_char_pos);
+                                let (two_before_char_, _) = self
+                                    .get_before_char(before_char_pos, &self.two_before_char_walk);
                                 two_before_char = Some(two_before_char_);
                                 two_before_char_.is_cjk()
                                     || two_before_char_.is_cmark_punctuation()
@@ -2356,7 +2360,8 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                             let two_before_char = if let Some(two_before_char_) = two_before_char {
                                 two_before_char_
                             } else if let Some(before_char_pos) = before_char_pos {
-                                let (two_before_char_, _) = self.get_before_char(before_char_pos);
+                                let (two_before_char_, _) = self
+                                    .get_before_char(before_char_pos, &self.two_before_char_walk);
                                 two_before_char = Some(two_before_char_);
                                 two_before_char_
                             } else {
@@ -2384,7 +2389,8 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                             let two_before_char = if let Some(two_before_char_) = two_before_char {
                                 two_before_char_
                             } else if let Some(before_char_pos) = before_char_pos {
-                                self.get_before_char(before_char_pos).0
+                                self.get_before_char(before_char_pos, &self.two_before_char_walk)
+                                    .0
                             } else {
                                 '\n'
                             };
