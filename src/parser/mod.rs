@@ -211,14 +211,17 @@ fn convert_sourcepos_columns_to_chars(
     cancellation: &Cancellation<'_>,
 ) {
     let lines = strings::lines_with_endings(md);
+    let mut columns = vec![None; lines.len()];
 
-    let convert = |lc: &mut nodes::LineColumn| {
+    let mut convert = |lc: &mut nodes::LineColumn| {
         if lc.column == 0 {
             return;
         }
-        if let Some(line) = lines.get(lc.line.wrapping_sub(1)) {
-            lc.column = byte_col_to_char_col(line, lc.column);
-        }
+        let Some(line) = lines.get(lc.line.wrapping_sub(1)) else {
+            return;
+        };
+        let columns = columns[lc.line - 1].get_or_insert_with(|| CharColumns::new(line));
+        lc.column = columns.char_col(lc.column);
     };
 
     for node in document.descendants() {
@@ -231,22 +234,42 @@ fn convert_sourcepos_columns_to_chars(
     }
 }
 
-/// Convert a 1-based byte column index to a 1-based char column index for the given line.
-fn byte_col_to_char_col(line: &str, byte_col: usize) -> usize {
-    // If the byte column points past the end of the line (e.g. position
-    // after the final byte, such as softbreak/newline positions),
-    // map it to the position after the last Unicode character.
-    if byte_col > line.len() {
-        return line.chars().count() + 1;
+#[derive(Clone)]
+enum CharColumns {
+    Ascii(usize),
+    Starts(Vec<usize>),
+}
+
+impl CharColumns {
+    fn new(line: &str) -> Self {
+        if line.is_ascii() {
+            return CharColumns::Ascii(line.len());
+        }
+        let mut starts = Vec::with_capacity(line.len() + 1);
+        let mut count = 0;
+        starts.push(count);
+        for &b in line.as_bytes() {
+            if !is_utf8_continuation(b) {
+                count += 1;
+            }
+            starts.push(count);
+        }
+        CharColumns::Starts(starts)
     }
 
-    // Count all chars whose start byte offset is <= byte_idx.
-    // Since `char_indices()` yields (byte_offset_of_char_start, char),
-    // `take_while` includes exactly the chars that start at or before `byte_idx`.
-    let byte_idx = byte_col - 1;
-    line.char_indices()
-        .take_while(|&(i, _)| i <= byte_idx)
-        .count()
+    fn char_col(&self, byte_col: usize) -> usize {
+        match self {
+            CharColumns::Ascii(len) => byte_col.min(len + 1),
+            CharColumns::Starts(starts) => match starts.get(byte_col) {
+                Some(&count) => count,
+                None => starts.last().unwrap() + 1,
+            },
+        }
+    }
+}
+
+fn is_utf8_continuation(b: u8) -> bool {
+    b & 0xc0 == 0x80
 }
 
 /// Return whether the byte at the given offset passes the callback.

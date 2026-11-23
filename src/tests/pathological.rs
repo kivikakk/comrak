@@ -471,6 +471,16 @@ fn pathological_attribute_chain() {
 
 #[test]
 #[timeout(4000)]
+fn pathological_sourcepos_chars_long_line() {
+    let n = 10_000;
+    let input = "é *a* ".repeat(n);
+    let exp = format!("<p>{}</p>\n", "é <em>a</em> ".repeat(n).trim_end());
+
+    html_opts!([parse.sourcepos_chars], &input, &exp);
+}
+
+#[test]
+#[timeout(4000)]
 fn pathological_header_ids() {
     let n = 20_000;
     let input = "# a\n".repeat(n);
