@@ -481,6 +481,35 @@ fn pathological_sourcepos_chars_long_line() {
 
 #[test]
 #[timeout(4000)]
+fn pathological_block_directive_nesting() {
+    let n = 50_000;
+    let input = "::: x\n".repeat(n);
+
+    let mut options = Options::default();
+    options.extension.block_directive = true;
+    let html = markdown_to_html(&input, &options);
+    assert_eq!(html.matches("<div class=\"x\">").count(), 100);
+}
+
+#[test]
+#[timeout(4000)]
+fn pathological_multiline_alert_nesting() {
+    let n = 50_000;
+    let input = ">>> [!note]\n".repeat(n);
+
+    let mut options = Options::default();
+    options.extension.alerts = true;
+    options.extension.multiline_block_quotes = true;
+    let html = markdown_to_html(&input, &options);
+    assert_eq!(
+        html.matches("<div class=\"markdown-alert markdown-alert-note\">")
+            .count(),
+        101
+    );
+}
+
+#[test]
+#[timeout(4000)]
 fn pathological_header_ids() {
     let n = 20_000;
     let input = "# a\n".repeat(n);

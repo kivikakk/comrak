@@ -50,6 +50,7 @@ const CODE_INDENT: usize = 4;
 // depth. It is unlikely that a non-contrived markdown document will
 // be nested this deeply.
 const MAX_LIST_DEPTH: usize = 100;
+const MAX_FENCED_CONTAINER_DEPTH: usize = 100;
 
 const MAX_REF_SIZE_FLOOR: usize = 100_000;
 
@@ -270,6 +271,13 @@ impl CharColumns {
 
 fn is_utf8_continuation(b: u8) -> bool {
     b & 0xc0 == 0x80
+}
+
+fn fenced_container_fits(container: Node<'_>) -> bool {
+    container
+        .ancestors()
+        .nth(MAX_FENCED_CONTAINER_DEPTH)
+        .is_none()
 }
 
 /// Return whether the byte at the given offset passes the callback.
@@ -1042,6 +1050,9 @@ where
         let Some(matched) = self.detect_block_directive(line) else {
             return false;
         };
+        if !fenced_container_fits(container) {
+            return false;
+        }
 
         let first_nonspace = self.first_nonspace;
         let offset = self.offset;
@@ -1152,7 +1163,9 @@ where
         let alert_startpos = self.first_nonspace;
 
         if fence_length == 2
-            || (fence_length >= 3 && !self.options.extension.multiline_block_quotes)
+            || (fence_length >= 3
+                && (!self.options.extension.multiline_block_quotes
+                    || !fenced_container_fits(container)))
         {
             return false;
         }
@@ -1220,6 +1233,9 @@ where
         let Some(matched) = self.detect_multiline_blockquote(line) else {
             return false;
         };
+        if !fenced_container_fits(container) {
+            return false;
+        }
 
         let first_nonspace = self.first_nonspace;
         let offset = self.offset;
