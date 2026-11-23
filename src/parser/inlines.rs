@@ -137,6 +137,7 @@ pub struct Subject<'a: 'd, 'r, 'o, 'd, 'c, 'p> {
     no_link_openers: bool,
     pub(crate) relaxed_autolink_dead_zone_end: usize,
     pub(crate) autolink_extent: Range<usize>,
+    bracket_closers: Option<FxHashMap<usize, usize>>,
 }
 
 #[derive(Default)]
@@ -185,6 +186,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             no_link_openers: true,
             relaxed_autolink_dead_zone_end: 0,
             autolink_extent: 0..0,
+            bracket_closers: None,
         }
     }
 
@@ -1216,29 +1218,14 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         // We're at ^, next should be [
         self.scanner.pos += 2; // Skip ^[
 
-        // Find the closing ]
-        let mut depth = 1;
-        let mut endpos = self.scanner.pos;
-        while endpos < self.input.len() && depth > 0 {
-            match self.input.as_bytes()[endpos] {
-                b'[' => depth += 1,
-                b']' => depth -= 1,
-                b'\\' if endpos + 1 < self.input.len() => {
-                    endpos += 1; // Skip escaped character
-                }
-                _ => {}
-            }
-            endpos += 1;
-        }
-
-        if depth != 0 {
+        let closers = self
+            .bracket_closers
+            .get_or_insert_with(|| match_brackets(&self.input));
+        let Some(&endpos) = closers.get(&(startpos + 1)) else {
             // No matching closing bracket, treat as regular text
             self.scanner.pos = startpos + 1;
             return Some(self.make_inline(NodeValue::Text("^".into()), startpos, startpos));
-        }
-
-        // endpos is now one past the ], so adjust
-        endpos -= 1;
+        };
 
         // Extract the content
         let content = &self.input[self.scanner.pos..endpos];
@@ -2438,6 +2425,27 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         }
         ast.attrs = Some(Box::new(attrs));
     }
+}
+
+fn match_brackets(input: &str) -> FxHashMap<usize, usize> {
+    let bytes = input.as_bytes();
+    let mut closers = FxHashMap::default();
+    let mut openers = vec![];
+    let mut i = 0;
+    while i < bytes.len() {
+        match bytes[i] {
+            b'[' => openers.push(i),
+            b']' => {
+                if let Some(opener) = openers.pop() {
+                    closers.insert(opener, i);
+                }
+            }
+            b'\\' => i += 1,
+            _ => {}
+        }
+        i += 1;
+    }
+    closers
 }
 
 pub struct RefMap {

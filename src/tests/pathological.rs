@@ -524,6 +524,20 @@ fn pathological_alert_marker_run() {
 
 #[test]
 #[timeout(4000)]
+fn pathological_inline_footnotes_unclosed() {
+    let n = 60_000;
+    let input = "^[".repeat(n);
+    let exp = format!("<p>{}</p>\n", input);
+
+    html_opts!(
+        [extension.footnotes, extension.inline_footnotes],
+        &input,
+        &exp
+    );
+}
+
+#[test]
+#[timeout(4000)]
 fn pathological_header_ids() {
     let n = 20_000;
     let input = "# a\n".repeat(n);
