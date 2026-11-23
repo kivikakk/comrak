@@ -548,6 +548,16 @@ fn pathological_latex_math_unclosed() {
 
 #[test]
 #[timeout(4000)]
+fn pathological_skip_char_flanking() {
+    let n = 40_000;
+    let input = "~=".repeat(n);
+    let exp = format!("<p>{}</p>\n", input);
+
+    html_opts!([extension.strikethrough, extension.highlight], &input, &exp);
+}
+
+#[test]
+#[timeout(4000)]
 fn pathological_header_ids() {
     let n = 20_000;
     let input = "# a\n".repeat(n);

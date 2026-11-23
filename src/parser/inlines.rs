@@ -139,6 +139,8 @@ pub struct Subject<'a: 'd, 'r, 'o, 'd, 'c, 'p> {
     pub(crate) autolink_extent: Range<usize>,
     bracket_closers: Option<FxHashMap<usize, usize>>,
     latex_math_no_closer_from: [usize; 2],
+    before_char_walk: Cell<(usize, usize)>,
+    after_char_walk: Cell<(usize, usize)>,
 }
 
 #[derive(Default)]
@@ -189,6 +191,8 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             autolink_extent: 0..0,
             bracket_closers: None,
             latex_math_no_closer_from: [usize::MAX; 2],
+            before_char_walk: Cell::new((0, 0)),
+            after_char_walk: Cell::new((usize::MAX, 0)),
         }
     }
 
@@ -2078,11 +2082,6 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
     ////////////////////
 
     #[inline]
-    fn eof(&self) -> bool {
-        self.scanner.eof(&self.input)
-    }
-
-    #[inline]
     fn peek_byte(&self) -> Option<u8> {
         self.scanner.peek_byte(&self.input)
     }
@@ -2248,13 +2247,22 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         if pos == 0 {
             return ('\n', None);
         }
+        let (cached_pos, cached_before) = self.before_char_walk.get();
         let mut before_char_pos = pos - 1;
-        while before_char_pos > 0
-            && (self.input.as_bytes()[before_char_pos] >> 6 == 2
-                || self.tables.skip[self.input.as_bytes()[before_char_pos] as usize])
-        {
+        loop {
+            if before_char_pos + 1 == cached_pos {
+                before_char_pos = cached_before;
+                break;
+            }
+            if !(before_char_pos > 0
+                && (self.input.as_bytes()[before_char_pos] >> 6 == 2
+                    || self.tables.skip[self.input.as_bytes()[before_char_pos] as usize]))
+            {
+                break;
+            }
             before_char_pos -= 1;
         }
+        self.before_char_walk.set((pos, before_char_pos));
         match self.input[before_char_pos..pos].chars().next() {
             Some(x) => {
                 if (x as usize) < 256 && self.tables.skip[x as usize] {
@@ -2264,6 +2272,29 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                 }
             }
             None => ('\n', None),
+        }
+    }
+
+    fn get_after_char(&self, pos: usize) -> char {
+        if pos >= self.input.len() {
+            return '\n';
+        }
+        let (walk_start, walk_end) = self.after_char_walk.get();
+        let mut after_char_pos = pos;
+        if (walk_start..=walk_end).contains(&after_char_pos) {
+            after_char_pos = walk_end;
+        } else {
+            while after_char_pos < self.input.len() - 1
+                && self.tables.skip[self.input.as_bytes()[after_char_pos] as usize]
+            {
+                after_char_pos += 1;
+            }
+            self.after_char_walk.set((pos, after_char_pos));
+        }
+        match self.input[after_char_pos..].chars().next() {
+            Some(x) if (x as usize) < 256 && self.tables.skip[x as usize] => '\n',
+            Some(x) => x,
+            None => '\n',
         }
     }
 
@@ -2281,26 +2312,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             }
         }
 
-        let after_char = if self.eof() {
-            '\n'
-        } else {
-            let mut after_char_pos = self.scanner.pos;
-            while after_char_pos < self.input.len() - 1
-                && self.tables.skip[self.input.as_bytes()[after_char_pos] as usize]
-            {
-                after_char_pos += 1;
-            }
-            match self.input[after_char_pos..].chars().next() {
-                Some(x) => {
-                    if (x as usize) < 256 && self.tables.skip[x as usize] {
-                        '\n'
-                    } else {
-                        x
-                    }
-                }
-                None => '\n',
-            }
-        };
+        let after_char = self.get_after_char(self.scanner.pos);
 
         let cjk_friendly = self.options.extension.cjk_friendly_emphasis;
         let mut two_before_char: Option<char> = None;
