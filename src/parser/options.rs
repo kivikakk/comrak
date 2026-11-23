@@ -203,6 +203,7 @@ pub struct Extension<'c> {
     ///
     /// Each term must be defined in one paragraph, followed by a blank line,
     /// and then by the details.  Details begins with a colon.
+    /// TODO: stale; no blank line is needed, and since #945 the colon follows list marker rules.
     ///
     /// ```markdown
     /// First term
@@ -222,6 +223,10 @@ pub struct Extension<'c> {
     /// options.extension.description_lists = true;
     /// assert_eq!(markdown_to_html("Term\n\n: Definition", &options),
     ///            "<dl>\n<dt>Term</dt>\n<dd>\n<p>Definition</p>\n</dd>\n</dl>\n");
+    /// assert_eq!(markdown_to_html("Term\n: Definition", &options),
+    ///            "<dl>\n<dt>Term</dt>\n<dd>Definition</dd>\n</dl>\n");
+    /// assert_eq!(markdown_to_html("Term\n:\n  Definition", &options),
+    ///            "<dl>\n<dt>Term</dt>\n<dd>Definition</dd>\n</dl>\n");
     /// ```
     #[cfg_attr(feature = "bon", builder(default))]
     pub description_lists: bool,

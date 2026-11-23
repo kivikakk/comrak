@@ -17,6 +17,68 @@ Behind the scenes:
 
 -->
 
+# [v1.2.0] - 2026-11-23
+
+We have two exciting bits of news today: there's some new quadratic features, which I've decided I don't like and am addressing (they are not features, they are bugs), and some newly specced extensions.
+
+Share and enjoy!
+
+Security:
+
+* Fix quadratic time on escaped pipes in table cells, published as [GHSA-7f8r-4rh5-vr5h](https://github.com/kivikakk/comrak/security/advisories/GHSA-7f8r-4rh5-vr5h).
+  * Looking into this, we also found some nasty cases in failing autolink domains and non-literal emails!
+  * These regressed in 1.0.0; `table` and `autolink` are both in `--gfm`, so you almost certainly want to upgrade if you process untrusted content. (reported by @sventmueller, fixed by @kivikakk in https://github.com/kivikakk/comrak/pull/948)
+* Fix further quadratic cases that regressed in 1.x. (by @kivikakk in https://github.com/kivikakk/comrak/pull/948 and https://github.com/kivikakk/comrak/pull/949)
+  * Since 1.0.0: OFM block IDs in HTML output, and grid tables in CommonMark output.
+  * Since 1.1.0: chained or long attribute blocks, unparsable attribute openers, and deep nesting in CommonMark output.
+* Fix quadratic cases present since before v1. (by @kivikakk in https://github.com/kivikakk/comrak/pull/948)
+  * Autolinks separated by `<`, `sourcepos_chars` on long lines, unclosed inline footnotes, unclosed LaTeX math, strikethrough and highlight delimiter runs, long `>` runs with alerts or multiline block quotes, and unclosed HEEx directives.
+* Limit output amplification, at some cost to output. (by @kivikakk in https://github.com/kivikakk/comrak/pull/948)
+  * Lists, footnote definitions, description items, and fenced containers (block directives, multiline block quotes and alerts) nest 100 deep at most --- about 50 levels of list.  Deeper markers are just read as text.
+  * Autocompleted table cells now get one allowance _per document_ (of the larger of 500K or the input's length in bytes) instead of per table.
+  * The CommonMark formatter writes lazy continuation lines when a container prefix exceeds 64 bytes.
+  * The CommonMark formatter writes grid tables with an area allowance per render; exceeding that, a table is written as its cells' contents, as plain blocks in order.
+    * Grid table cells also no longer wrap at `width`.
+  * `experimental_minimize_commonmark` is skipped when it would be costly.
+
+Parser changes:
+
+* Math has been specced, with some changes. (by @kivikakk in https://github.com/kivikakk/comrak/pull/941)
+  * An escaped backslash no longer escapes the closer after it: `$a\\$ b$` now gets closed after `a\\`, and `\(a\\)b\)` gets closed at the final `\)`.
+  * Code math is a code span between dollars: backtick runs must match, so ``` $``a`b``$ ``` now works, and `` $`a`b`$ `` is no longer math.
+  * ```` ```math ```` code blocks are math only with `math_code`. They *always* were before, even without any extensions enabled! Info strings like `math foo` count too.
+  * Dollar math keeps line endings, instead of turning them into spaces.
+* Description lists have been specced, with some changes. (by @kivikakk in https://github.com/kivikakk/comrak/pull/945)
+  * `:` now follows list marker rules: it can stand alone (`a\n:` is now a description list), its content can start on the next line, and five or more spaces after it produce indented code.
+  * A blank line between details makes the item loose, and a blank line after a description list in a list item no longer lazily continues.
+  * OFM block IDs now label the `<dt>` or `<dd>` they end, instead of the `<dl>`.
+* Superscript and subscript have been specced, with some changes. (by @kivikakk in https://github.com/kivikakk/comrak/pull/946)
+  * Superscript can open inside brackets, so `[a^2^](/u)` and `[c^2^]` now work.
+  * Punctuation no longer affects flanking for `^` and `~`, so `a^b.^c` and `x^(1)^y` now work.
+  * Carets pair one at a time, making `^^a^^` nested superscript.
+  * Enabling subscript no longer changes strikethrough flanking: `a~~(b)~~ c` remains literal with it on as with it off.
+* Header IDs have been specced, with some changes. (by @kivikakk in https://github.com/kivikakk/comrak/pull/944)
+  * Generated header IDs avoid _every_ ID we write under `header_id_prefix`: explicit IDs from attributes, footnote and footnote reference IDs, and OFM block IDs.
+  * Header IDs are never empty; an empty heading now gets `-1`. `Anchorizer` starts with `""` reserved.
+
+Bug fixes:
+
+* Math code blocks get `data-meta` and attributes like other code blocks. (by @kivikakk in https://github.com/kivikakk/comrak/pull/942)
+* The CommonMark formatter escapes literal carets with `superscript`. (by @kivikakk in https://github.com/kivikakk/comrak/pull/946)
+* The XML formatter no longer writes `<escaped_tag~~>`, but `<escaped_tag tag="~~">`. (by @kivikakk in https://github.com/kivikakk/comrak/pull/946)
+* The XML formatter adds `tight` to `description_item`. (by @kivikakk in https://github.com/kivikakk/comrak/pull/945)
+* The XML formatter escapes code block info strings. (by @kivikakk in https://github.com/kivikakk/comrak/pull/949)
+
+Documentation:
+
+* Document math, GFM (and its quirks), `github_pre_lang`, sourcepos, header IDs, description lists, and superscript and subscript with care. (by @kivikakk in https://github.com/kivikakk/comrak/pull/941, https://github.com/kivikakk/comrak/pull/942, https://github.com/kivikakk/comrak/pull/943, https://github.com/kivikakk/comrak/pull/944, https://github.com/kivikakk/comrak/pull/945, https://github.com/kivikakk/comrak/pull/946)
+  * The math pages are now combined, as are superscript and subscript.
+* Drop the sourcepos caveats from the `description_lists` and `render.sourcepos` docs. (by @kivikakk in https://github.com/kivikakk/comrak/pull/943)
+
+
+Diff: https://github.com/kivikakk/comrak/compare/v1.1.0...v1.2.0
+
+
 # [v1.1.0] - 2026-11-20
 
 Remember this line from earlier this week?
