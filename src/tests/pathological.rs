@@ -556,6 +556,17 @@ fn pathological_skip_char_flanking() {
     html_opts!([extension.strikethrough, extension.highlight], &input, &exp);
 }
 
+#[cfg(feature = "phoenix_heex")]
+#[test]
+#[timeout(4000)]
+fn pathological_heex_unclosed_directive_paragraph() {
+    let n = 40_000;
+    let input = format!("a <%\n{}", "a\n".repeat(n));
+    let exp = format!("<p>a &lt;%\n{}</p>\n", "a\n".repeat(n).trim_end());
+
+    html_opts!([extension.phoenix_heex], &input, &exp);
+}
+
 #[test]
 #[timeout(4000)]
 fn pathological_header_ids() {

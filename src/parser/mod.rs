@@ -344,6 +344,8 @@ pub struct Parser<'a: 'd, 'o, 'c, 'd> {
     pending_callout_titles: Vec<Node<'a>>,
     #[cfg(feature = "phoenix_heex")]
     heex_block_depth: usize,
+    #[cfg(feature = "phoenix_heex")]
+    heex_paragraph_scan: (*const (), usize, bool),
     #[cfg(feature = "grid_table")]
     grid_table: Option<grid_table::Pending<'a>>,
     #[cfg(feature = "grid_table")]
@@ -426,6 +428,8 @@ where
             pending_callout_titles: Vec::new(),
             #[cfg(feature = "phoenix_heex")]
             heex_block_depth: 0,
+            #[cfg(feature = "phoenix_heex")]
+            heex_paragraph_scan: (std::ptr::null(), 0, false),
             #[cfg(feature = "grid_table")]
             grid_table: None,
             #[cfg(feature = "grid_table")]
@@ -1690,51 +1694,28 @@ where
     }
 
     #[cfg(feature = "phoenix_heex")]
-    fn has_unclosed_heex_directive(&self, node: Node<'a>) -> bool {
+    fn has_unclosed_heex_directive(&mut self, node: Node<'a>) -> bool {
         let data = node.data();
         let content = &data.lines.as_ref().unwrap().content;
+        let key = std::ptr::from_ref(node).cast();
 
-        if !content.as_bytes().contains(&b'<') {
-            return false;
+        let (scanned_node, scanned, mut unclosed) = self.heex_paragraph_scan;
+        let from = if scanned_node == key && scanned <= content.len() {
+            scanned
+        } else {
+            unclosed = false;
+            0
+        };
+
+        let added = &content[from..];
+        if let Some(open) = added.rfind("<%") {
+            unclosed = !added[open + 2..].contains("%>");
+        } else if unclosed {
+            unclosed = !added.contains("%>");
         }
 
-        let bytes = content.as_bytes();
-        let len = bytes.len();
-
-        let mut i = 0;
-        let mut in_directive = false;
-        let mut in_comment = false;
-
-        while i < len {
-            if i + 1 < len && bytes[i] == b'<' && bytes[i + 1] == b'%' {
-                in_directive = true;
-                if (i + 2 < len && bytes[i + 2] == b'#')
-                    || (i + 3 < len && bytes[i + 2] == b'!' && bytes[i + 3] == b'-')
-                {
-                    in_comment = true;
-                }
-                i += 2;
-            } else if in_directive && i + 1 < len && bytes[i] == b'%' && bytes[i + 1] == b'>' {
-                in_directive = false;
-                in_comment = false;
-                i += 2;
-            } else if in_directive
-                && in_comment
-                && i + 3 < len
-                && bytes[i] == b'-'
-                && bytes[i + 1] == b'-'
-                && bytes[i + 2] == b'%'
-                && bytes[i + 3] == b'>'
-            {
-                in_directive = false;
-                in_comment = false;
-                i += 4;
-            } else {
-                i += 1;
-            }
-        }
-
-        in_directive
+        self.heex_paragraph_scan = (key, content.len(), unclosed);
+        unclosed
     }
 
     #[cfg(feature = "phoenix_heex")]
