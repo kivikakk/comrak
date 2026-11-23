@@ -3219,7 +3219,7 @@ where
             return;
         }
 
-        if !spx.is_literal_at(0, end) {
+        if !spx.literal_cursor().is_literal_at(0, end) {
             return;
         }
 
@@ -3518,6 +3518,36 @@ pub enum AutolinkType {
     Email,
 }
 
+pub(crate) struct LiteralCursor<'s> {
+    items: &'s [(Sourcepos, usize)],
+    pos: usize,
+}
+
+impl LiteralCursor<'_> {
+    pub(crate) fn is_literal_at(&mut self, start: usize, len: usize) -> bool {
+        while let [(_, x), rest @ ..] = self.items
+            && self.pos + x <= start
+        {
+            self.pos += x;
+            self.items = rest;
+        }
+
+        let end = start + len;
+        let mut pos = self.pos;
+        for &(sp, x) in self.items {
+            if pos >= end {
+                return true;
+            }
+            if sp.start.line != sp.end.line || sp.end.column - sp.start.column + 1 != x {
+                return false;
+            }
+            pos += x;
+        }
+        assert!(pos >= end);
+        true
+    }
+}
+
 #[derive(Clone)]
 pub(crate) struct Spx {
     items: SmallVec<[(Sourcepos, usize); 4]>,
@@ -3577,22 +3607,11 @@ impl Spx {
         }
     }
 
-    pub(crate) fn is_literal_at(&self, start: usize, len: usize) -> bool {
-        let end = start + len;
-        let mut pos = 0;
-        for &(sp, x) in &self.items[self.front..] {
-            if pos >= end {
-                return true;
-            }
-            if pos + x > start
-                && (sp.start.line != sp.end.line || sp.end.column - sp.start.column + 1 != x)
-            {
-                return false;
-            }
-            pos += x;
+    pub(crate) fn literal_cursor(&self) -> LiteralCursor<'_> {
+        LiteralCursor {
+            items: &self.items[self.front..],
+            pos: 0,
         }
-        assert!(pos >= end);
-        true
     }
 
     pub(crate) fn next_column(&self) -> Option<usize> {

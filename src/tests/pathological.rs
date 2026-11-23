@@ -367,6 +367,16 @@ fn pathological_relaxed_autolink_failing_domains() {
 
 #[test]
 #[timeout(4000)]
+fn pathological_autolink_email_non_literal() {
+    let n = 40_000;
+    let input = "a&#64;b.c ".repeat(n);
+    let exp = format!("<p>{}</p>\n", "a@b.c ".repeat(n).trim_end());
+
+    html_opts!([extension.autolink], &input, &exp, no_roundtrip);
+}
+
+#[test]
+#[timeout(4000)]
 fn pathological_header_ids() {
     let n = 20_000;
     let input = "# a\n".repeat(n);

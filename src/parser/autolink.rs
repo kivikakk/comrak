@@ -20,9 +20,10 @@ pub(crate) fn process_email_autolinks<'a>(
     spx: &mut Spx,
     cancellation: &Cancellation<'_>,
 ) {
+    let mut literal = spx.literal_cursor();
     let Some((mut post, mut before_len, mut skip)) =
         find_email_autolink(arena, contents, relaxed_autolinks, |start, len| {
-            spx.is_literal_at(start, len)
+            literal.is_literal_at(start, len)
         })
     else {
         return;
@@ -83,11 +84,12 @@ pub(crate) fn process_email_autolinks<'a>(
         )
             .into();
 
+        let mut literal = spx.literal_cursor();
         if let Some((next_post, next_before_len, next_skip)) = find_email_autolink(
             arena,
             &original[offset..],
             relaxed_autolinks,
-            |start, len| spx.is_literal_at(start, len),
+            |start, len| literal.is_literal_at(start, len),
         ) {
             post = next_post;
             before_len = next_before_len;
@@ -109,7 +111,7 @@ fn find_email_autolink<'a>(
     arena: &'a Arena<'a>,
     contents: &str,
     relaxed_autolinks: bool,
-    is_literal: impl Fn(usize, usize) -> bool,
+    mut is_literal: impl FnMut(usize, usize) -> bool,
 ) -> Option<(Node<'a>, usize, usize)> {
     static MATCHER: OnceLock<MemchrN> = OnceLock::new();
     static RELAXED_MATCHER: OnceLock<MemchrN> = OnceLock::new();
