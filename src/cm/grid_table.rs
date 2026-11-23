@@ -1,4 +1,5 @@
 use std::fmt;
+use std::rc::Rc;
 
 use unicode_width::UnicodeWidthChar;
 
@@ -6,6 +7,9 @@ use crate::cm::{CommonMarkFormatter, Escaping, tight_container};
 use crate::node_matches;
 use crate::nodes::{GridTableSection, Node, NodeValue, TableAlignment};
 use crate::parser::TAB_STOP;
+
+const AREA_FACTOR: usize = 16;
+const AREA_SLACK: usize = 1 << 16;
 
 struct Rect {
     top: usize,
@@ -41,6 +45,34 @@ fn offsets(sizes: &[usize]) -> Vec<usize> {
     offsets
 }
 
+fn area_allowance(root: Node<'_>) -> usize {
+    let source: usize = root
+        .descendants()
+        .map(|node| {
+            let ast = node.data();
+            match ast.value {
+                NodeValue::GridTable(..) => {
+                    (ast.sourcepos.end.line - ast.sourcepos.start.line + 1)
+                        * ast.sourcepos.end.column
+                }
+                NodeValue::Text(ref literal) => literal.len(),
+                NodeValue::HtmlInline(ref literal) => literal.len(),
+                NodeValue::Code(ref code) => code.literal.len(),
+                NodeValue::CodeBlock(ref code) => code.literal.len(),
+                NodeValue::HtmlBlock(ref html) => html.literal.len(),
+                _ => 0,
+            }
+        })
+        .sum();
+    AREA_FACTOR * source + AREA_SLACK
+}
+
+fn direct_tight(table: Node<'_>) -> bool {
+    table.parent().is_some_and(|p| {
+        node_matches!(p, NodeValue::Item(..) | NodeValue::TaskItem(..)) && tight_container(p)
+    })
+}
+
 fn absorbs(node: Node<'_>) -> bool {
     let mut current = Some(node);
     while let Some(node) = current {
@@ -64,7 +96,35 @@ fn is(canvas: &[Vec<Option<String>>], y: usize, x: usize, s: &str) -> bool {
 }
 
 impl<'a> CommonMarkFormatter<'a, '_, '_, '_> {
+    fn format_grid_cells(&mut self, table: Node<'a>, cells: &[Rect]) -> fmt::Result {
+        let tight = self.in_tight_list_item;
+        let blank_before = table
+            .previous_sibling()
+            .is_some_and(|previous| !direct_tight(table) || absorbs(previous));
+        self.in_tight_list_item = !blank_before;
+        self.blankline();
+        for cell in cells {
+            self.blankline();
+            for line in &cell.lines {
+                if line.is_empty() {
+                    self.blankline();
+                } else {
+                    self.output(line, false, Escaping::Literal)?;
+                    self.in_tight_list_item = false;
+                    self.cr();
+                }
+            }
+        }
+        self.in_tight_list_item = tight;
+        self.blankline();
+        Ok(())
+    }
+
     pub(super) fn format_grid_table(&mut self, table: Node<'a>) -> fmt::Result {
+        if self.grid_area.get().is_none() {
+            self.grid_area.set(Some(area_allowance(self.root)));
+        }
+
         let columns = match table.data().value {
             NodeValue::GridTable(ref table) => table.columns.clone(),
             _ => unreachable!(),
@@ -82,7 +142,12 @@ impl<'a> CommonMarkFormatter<'a, '_, '_, '_> {
                     unreachable!()
                 };
                 let mut content = String::new();
-                CommonMarkFormatter::new(cell, self.options, &mut content).format(cell)?;
+                let mut formatter = CommonMarkFormatter::new(cell, self.options, &mut content);
+                formatter.width = 0;
+                formatter.allow_wrap = false;
+                formatter.root = self.root;
+                formatter.grid_area = Rc::clone(&self.grid_area);
+                formatter.format(cell)?;
                 let mut lines: Vec<String> =
                     content.lines().map(|l| l.trim_end().to_string()).collect();
                 while lines.last().is_some_and(|l| l.is_empty()) {
@@ -132,6 +197,12 @@ impl<'a> CommonMarkFormatter<'a, '_, '_, '_> {
         let ys = offsets(&heights);
         let width = xs.last().unwrap() + 1;
         let height = ys.last().unwrap() + 1;
+        let remaining = self.grid_area.get().unwrap();
+        let area = width.saturating_mul(height);
+        if area > remaining {
+            return self.format_grid_cells(table, &cells);
+        }
+        self.grid_area.set(Some(remaining - area));
         let mut canvas = vec![vec![Some(" ".to_string()); width]; height];
 
         for cell in &cells {
@@ -193,9 +264,7 @@ impl<'a> CommonMarkFormatter<'a, '_, '_, '_> {
             }
         }
 
-        let direct_tight = table.parent().is_some_and(|p| {
-            node_matches!(p, NodeValue::Item(..) | NodeValue::TaskItem(..)) && tight_container(p)
-        });
+        let direct_tight = direct_tight(table);
         let indent = match table.previous_sibling() {
             _ if !direct_tight => 0,
             Some(previous) if node_matches!(previous, NodeValue::GridTable(..)) => {

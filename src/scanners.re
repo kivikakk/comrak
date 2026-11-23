@@ -470,28 +470,6 @@ pub fn shortcode(s: &str) -> Option<usize> {
 */
 }
 
-pub fn open_multiline_block_quote_fence(s: &str) -> Option<usize> {
-    let mut cursor = 0;
-    let mut marker = 0;
-    let mut ctxmarker = 0;
-    let len = s.len();
-/*!re2c
-    [>]{3,} / [ \t]*[\r\n\xff] { return Some(cursor); }
-    * { return None; }
-*/
-}
-
-pub fn close_multiline_block_quote_fence(s: &str) -> Option<usize> {
-    let mut cursor = 0;
-    let mut marker = 0;
-    let mut ctxmarker = 0;
-    let len = s.len();
-/*!re2c
-    [>]{3,} / [ \t]*[\r\n\xff] { return Some(cursor); }
-    * { return None; }
-*/
-}
-
 // Returns the length of the match, the tasklist item contents, and the range of
 // the tasklist item match.
 // The match is not guaranteed to be one byte or one "character" long; the

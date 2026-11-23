@@ -1,6 +1,10 @@
+#[cfg(feature = "grid_table")]
+use std::cell::Cell;
 use std::cmp::max;
 use std::collections::HashSet;
 use std::fmt::{self, Write};
+#[cfg(feature = "grid_table")]
+use std::rc::Rc;
 use std::str;
 
 use crate::Arena;
@@ -22,6 +26,8 @@ use crate::{node_matches, strings};
 
 #[cfg(feature = "grid_table")]
 mod grid_table;
+
+const LAZY_PREFIX_THRESHOLD: usize = 64;
 
 /// Formats an AST as CommonMark, modified by the given options.
 pub fn format_document(root: Node<'_>, options: &Options, output: &mut dyn Write) -> fmt::Result {
@@ -91,7 +97,15 @@ struct CommonMarkFormatter<'a, 'o, 'c, 'w> {
     last_emphasis: Option<(Node<'a>, char)>,
     #[cfg(feature = "grid_table")]
     grid_table_indent: usize,
+    #[cfg(feature = "grid_table")]
+    root: Node<'a>,
+    #[cfg(feature = "grid_table")]
+    grid_area: Rc<Cell<Option<usize>>>,
     custom_escape: Option<fn(Node<'a>, char) -> bool>,
+    in_table: bool,
+    in_paragraph: bool,
+    lazy_line: bool,
+    width: usize,
     footnote_ix: u32,
     ol_stack: Vec<usize>,
     allow_wrap: bool,
@@ -135,7 +149,15 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
             last_emphasis: None,
             #[cfg(feature = "grid_table")]
             grid_table_indent: 0,
+            #[cfg(feature = "grid_table")]
+            root: node,
+            #[cfg(feature = "grid_table")]
+            grid_area: Rc::default(),
             custom_escape: None,
+            in_table: false,
+            in_paragraph: false,
+            lazy_line: false,
+            width: options.render.width,
             footnote_ix: 0,
             ol_stack: vec![],
             allow_wrap: options.render.width > 0 && !options.render.hardbreaks,
@@ -167,7 +189,7 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
 
         let last_was_cr = self.window.last() == Some(&b'\n');
 
-        if self.options.render.width == 0 {
+        if self.width == 0 {
             self.output.write_str(s)?;
         } else if last_was_cr {
             // Can flush.
@@ -192,7 +214,7 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
         if self.prefix.is_empty() {
             return Ok(());
         }
-        if self.options.render.width == 0 {
+        if self.width == 0 {
             self.output.write_str(&self.prefix)?;
         } else {
             self.wrap_buffer.push_str(&self.prefix);
@@ -240,9 +262,14 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
 
         while let Some((mut i, c)) = it.next() {
             if self.begin_line {
-                self.write_prefix()?;
-                self.column = self.prefix.len();
+                if self.lazy_line {
+                    self.column = 0;
+                } else {
+                    self.write_prefix()?;
+                    self.column = self.prefix.len();
+                }
             }
+            self.lazy_line = false;
 
             if self.custom_escape.is_some_and(|f| f(self.node, c)) {
                 self.write("\\")?;
@@ -279,8 +306,8 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
                 self.begin_content = self.begin_content && isdigit(bytes[i]);
             }
 
-            if self.options.render.width > 0
-                && self.column > self.options.render.width
+            if self.width > 0
+                && self.column > self.width
                 && !self.begin_line
                 && self.last_breakable > 0
             {
@@ -288,7 +315,9 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
                     .write_str(&self.wrap_buffer[..self.last_breakable])?;
                 self.output.write_str("\n")?;
                 strings::remove_from_start(&mut self.wrap_buffer, self.last_breakable + 1);
-                self.wrap_buffer.insert_str(0, &self.prefix);
+                if !self.lazy_prefix() {
+                    self.wrap_buffer.insert_str(0, &self.prefix);
+                }
                 self.column = self.wrap_buffer.len();
                 self.last_breakable = 0;
                 self.begin_line = false;
@@ -916,9 +945,14 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
     }
 
     fn format_paragraph(&mut self, entering: bool) {
+        self.in_paragraph = entering;
         if !entering {
             self.blankline();
         }
+    }
+
+    fn lazy_prefix(&self) -> bool {
+        self.in_paragraph && self.prefix.len() > LAZY_PREFIX_THRESHOLD
     }
 
     fn format_text(
@@ -1011,19 +1045,19 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
                 write!(self, "\\")?;
             }
             self.cr();
+            self.lazy_line = self.lazy_prefix();
         }
         Ok(())
     }
 
     fn format_soft_break(&mut self, entering: bool) -> fmt::Result {
         if entering {
-            if !self.no_linebreaks
-                && self.options.render.width == 0
-                && !self.options.render.hardbreaks
-            {
+            if !self.no_linebreaks && self.width == 0 && !self.options.render.hardbreaks {
                 self.cr();
+                self.lazy_line = self.lazy_prefix();
             } else if self.options.render.hardbreaks {
                 self.output("\n", true, Escaping::Literal)?;
+                self.lazy_line = self.lazy_prefix();
             } else {
                 self.output(" ", true, Escaping::Literal)?;
             }
@@ -1247,9 +1281,6 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
         nl: &NodeWikiLink,
         entering: bool,
     ) -> Result<bool, fmt::Error> {
-        let in_table = node
-            .ancestors()
-            .any(|ancestor| node_matches!(ancestor, NodeValue::Table(..)));
         let title_is_url = node.first_child().is_some_and(|child| {
             child.next_sibling().is_none()
                 && matches!(child.data().value, NodeValue::Text(ref t) if *t == nl.url)
@@ -1264,7 +1295,7 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
                 write!(self, "]]")?;
                 return Ok(false);
             }
-            if !in_table {
+            if !self.in_table {
                 self.custom_escape = Some(wikilink_title_escape);
             }
             if self.options.extension.wikilinks() == Some(WikiLinksMode::UrlFirst) {
@@ -1277,7 +1308,7 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
                 self.output(&nl.url, false, Escaping::WikilinkUrl)?;
             }
             write!(self, "]]")?;
-            if !in_table {
+            if !self.in_table {
                 self.custom_escape = None;
             }
         }
@@ -1375,6 +1406,7 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
     }
 
     fn format_table(&mut self, entering: bool) {
+        self.in_table = entering;
         if entering {
             self.custom_escape = Some(table_escape);
         } else {
@@ -1766,6 +1798,8 @@ fn table_escape(node: Node<'_>, c: char) -> bool {
     }
 }
 
+const MINIMIZE_BUDGET: usize = 1 << 22;
+
 fn minimize_commonmark(text: &mut String, original_options: &Options) {
     let mut options_without = original_options.clone();
     options_without.render.experimental_minimize_commonmark = false;
@@ -1776,6 +1810,9 @@ fn minimize_commonmark(text: &mut String, original_options: &Options) {
         .enumerate()
         .filter_map(|(ix, &c)| if c == b'\\' { Some(ix) } else { None })
         .collect();
+    if ixs.len().saturating_mul(text.len()) > MINIMIZE_BUDGET {
+        return;
+    }
     let original = text.clone();
 
     let mut adjust = 0;

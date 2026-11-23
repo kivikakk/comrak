@@ -46,10 +46,11 @@ pub(crate) const TAB_STOP: usize = 4;
 const CODE_INDENT: usize = 4;
 
 // Very deeply nested lists can cause quadratic performance issues.
-// This constant is used in open_new_blocks() to limit the nesting
-// depth. It is unlikely that a non-contrived markdown document will
+// This limits the ancestor count for lists, footnote definitions,
+// description items, and fenced containers.
+// It is unlikely that a non-contrived markdown document will
 // be nested this deeply.
-const MAX_LIST_DEPTH: usize = 100;
+const MAX_NESTING_DEPTH: usize = 100;
 
 const MAX_REF_SIZE_FLOOR: usize = 100_000;
 
@@ -211,14 +212,17 @@ fn convert_sourcepos_columns_to_chars(
     cancellation: &Cancellation<'_>,
 ) {
     let lines = strings::lines_with_endings(md);
+    let mut columns = vec![None; lines.len()];
 
-    let convert = |lc: &mut nodes::LineColumn| {
+    let mut convert = |lc: &mut nodes::LineColumn| {
         if lc.column == 0 {
             return;
         }
-        if let Some(line) = lines.get(lc.line.wrapping_sub(1)) {
-            lc.column = byte_col_to_char_col(line, lc.column);
-        }
+        let Some(line) = lines.get(lc.line.wrapping_sub(1)) else {
+            return;
+        };
+        let columns = columns[lc.line - 1].get_or_insert_with(|| CharColumns::new(line));
+        lc.column = columns.char_col(lc.column);
     };
 
     for node in document.descendants() {
@@ -231,22 +235,77 @@ fn convert_sourcepos_columns_to_chars(
     }
 }
 
-/// Convert a 1-based byte column index to a 1-based char column index for the given line.
-fn byte_col_to_char_col(line: &str, byte_col: usize) -> usize {
-    // If the byte column points past the end of the line (e.g. position
-    // after the final byte, such as softbreak/newline positions),
-    // map it to the position after the last Unicode character.
-    if byte_col > line.len() {
-        return line.chars().count() + 1;
+#[derive(Clone)]
+enum CharColumns {
+    Ascii(usize),
+    Starts(Vec<usize>),
+}
+
+impl CharColumns {
+    fn new(line: &str) -> Self {
+        if line.is_ascii() {
+            return CharColumns::Ascii(line.len());
+        }
+        let mut starts = Vec::with_capacity(line.len() + 1);
+        let mut count = 0;
+        starts.push(count);
+        for &b in line.as_bytes() {
+            if !is_utf8_continuation(b) {
+                count += 1;
+            }
+            starts.push(count);
+        }
+        CharColumns::Starts(starts)
     }
 
-    // Count all chars whose start byte offset is <= byte_idx.
-    // Since `char_indices()` yields (byte_offset_of_char_start, char),
-    // `take_while` includes exactly the chars that start at or before `byte_idx`.
-    let byte_idx = byte_col - 1;
-    line.char_indices()
-        .take_while(|&(i, _)| i <= byte_idx)
-        .count()
+    fn char_col(&self, byte_col: usize) -> usize {
+        match self {
+            CharColumns::Ascii(len) => byte_col.min(len + 1),
+            CharColumns::Starts(starts) => match starts.get(byte_col) {
+                Some(&count) => count,
+                None => starts.last().unwrap() + 1,
+            },
+        }
+    }
+}
+
+fn is_utf8_continuation(b: u8) -> bool {
+    b & 0xc0 == 0x80
+}
+
+#[derive(Clone, Copy)]
+struct MarkerRun {
+    start: usize,
+    end: usize,
+    blank_after: bool,
+    alert: Option<(AlertType, usize)>,
+}
+
+fn alert_after_run(
+    line: &str,
+    mut pos: usize,
+    content_column: usize,
+) -> Option<(AlertType, usize)> {
+    let bytes = line.as_bytes();
+    let mut column = content_column;
+    loop {
+        match bytes.get(pos) {
+            Some(b' ') => column += 1,
+            Some(b'\t') => column += TAB_STOP - column % TAB_STOP,
+            _ => break,
+        }
+        pos += 1;
+    }
+    if column - content_column > CODE_INDENT {
+        return None;
+    }
+
+    let (alert_type, len) = scanners::alert_type(&line[pos..])?;
+    Some((alert_type, pos + len))
+}
+
+fn nesting_fits(container: Node<'_>) -> bool {
+    container.ancestors().nth(MAX_NESTING_DEPTH).is_none()
 }
 
 /// Return whether the byte at the given offset passes the callback.
@@ -274,6 +333,9 @@ pub struct Parser<'a: 'd, 'o, 'c, 'd> {
     offset: usize,
     column: usize,
     thematic_break_kill_pos: usize,
+    marker_run: Option<MarkerRun>,
+    autocompleted_cells: usize,
+    max_autocompleted_cells: usize,
     first_nonspace: usize,
     first_nonspace_column: usize,
     indent: usize,
@@ -288,6 +350,8 @@ pub struct Parser<'a: 'd, 'o, 'c, 'd> {
     pending_callout_titles: Vec<Node<'a>>,
     #[cfg(feature = "phoenix_heex")]
     heex_block_depth: usize,
+    #[cfg(feature = "phoenix_heex")]
+    heex_paragraph_scan: (*const (), usize, bool),
     #[cfg(feature = "grid_table")]
     grid_table: Option<grid_table::Pending<'a>>,
     #[cfg(feature = "grid_table")]
@@ -354,6 +418,9 @@ where
             offset: 0,
             column: 0,
             thematic_break_kill_pos: 0,
+            marker_run: None,
+            autocompleted_cells: 0,
+            max_autocompleted_cells: table::MAX_AUTOCOMPLETED_CELLS,
             first_nonspace: 0,
             first_nonspace_column: 0,
             indent: 0,
@@ -368,6 +435,8 @@ where
             pending_callout_titles: Vec::new(),
             #[cfg(feature = "phoenix_heex")]
             heex_block_depth: 0,
+            #[cfg(feature = "phoenix_heex")]
+            heex_paragraph_scan: (std::ptr::null(), 0, false),
             #[cfg(feature = "grid_table")]
             grid_table: None,
             #[cfg(feature = "grid_table")]
@@ -394,6 +463,7 @@ where
 
         let end = s.len();
         self.refmap.max_ref_size = end.max(MAX_REF_SIZE_FLOOR);
+        self.max_autocompleted_cells = end.max(table::MAX_AUTOCOMPLETED_CELLS);
 
         let mut ix = 0;
         let matcher = cr_or_lf_matcher();
@@ -508,6 +578,7 @@ where
         self.first_nonspace_column = 0;
         self.indent = 0;
         self.thematic_break_kill_pos = 0;
+        self.marker_run = None;
         self.blank = false;
         self.partially_consumed_tab = false;
     }
@@ -853,10 +924,9 @@ where
         };
 
         let bytes = line.as_bytes();
-        let matched = if self.indent <= 3 && bytes.get(self.first_nonspace) == Some(&b'>') {
-            scanners::close_multiline_block_quote_fence(&line[self.first_nonspace..]).unwrap_or(0)
-        } else {
-            0
+        let matched = match self.marker_run(line) {
+            Some(run) if self.indent <= 3 && run.blank_after => run.end - self.first_nonspace,
+            _ => 0,
         };
 
         if matched >= fence_length {
@@ -946,7 +1016,6 @@ where
     ) {
         let mut maybe_lazy =
             node_matches!(self.current, NodeValue::Paragraph) || allow_lazy_callout;
-        let mut depth = 0;
 
         while !node_matches!(
             container,
@@ -976,7 +1045,6 @@ where
             if self.cancellation.step() {
                 break;
             }
-            depth += 1;
             self.find_first_nonspace(line);
             let indented = self.indent >= CODE_INDENT;
 
@@ -997,9 +1065,9 @@ where
                     || self.handle_html_block(container, line)
                     || self.handle_setext_heading(container, line)
                     || self.handle_thematic_break(container, line, all_matched)
-                    || self.handle_footnote(container, line, depth)
+                    || self.handle_footnote(container, line)
                     || self.handle_description_list(container, line)))
-                || self.handle_list(container, line, indented, depth)
+                || self.handle_list(container, line, indented)
                 || self.handle_code_block(container, line, indented, maybe_lazy)
                 || self.handle_grid_table(container, line, indented, maybe_lazy)
                 || self.handle_table(container, line, indented))
@@ -1019,6 +1087,9 @@ where
         let Some(matched) = self.detect_block_directive(line) else {
             return false;
         };
+        if !nesting_fits(container) {
+            return false;
+        }
 
         let first_nonspace = self.first_nonspace;
         let offset = self.offset;
@@ -1129,7 +1200,8 @@ where
         let alert_startpos = self.first_nonspace;
 
         if fence_length == 2
-            || (fence_length >= 3 && !self.options.extension.multiline_block_quotes)
+            || (fence_length >= 3
+                && (!self.options.extension.multiline_block_quotes || !nesting_fits(container)))
         {
             return false;
         }
@@ -1160,43 +1232,23 @@ where
         true
     }
 
-    fn detect_alert(&self, line: &str) -> Option<(AlertType, usize, usize)> {
+    fn detect_alert(&mut self, line: &str) -> Option<(AlertType, usize, usize)> {
         if !self.options.extension.alerts {
             return None;
         }
 
-        let bytes = line.as_bytes();
-        let mut pos = self.first_nonspace;
-        while bytes.get(pos) == Some(&b'>') {
-            pos += 1;
-        }
-        let fence_length = pos - self.first_nonspace;
-        if fence_length == 0 {
-            return None;
-        }
-
-        let content_column = self.first_nonspace_column + fence_length;
-        let mut column = content_column;
-        loop {
-            match bytes.get(pos) {
-                Some(b' ') => column += 1,
-                Some(b'\t') => column += TAB_STOP - column % TAB_STOP,
-                _ => break,
-            }
-            pos += 1;
-        }
-        if column - content_column > CODE_INDENT {
-            return None;
-        }
-
-        let (alert_type, len) = scanners::alert_type(&line[pos..])?;
-        Some((alert_type, fence_length, pos + len))
+        let run = self.marker_run(line)?;
+        let (alert_type, title_startpos) = run.alert?;
+        Some((alert_type, run.end - self.first_nonspace, title_startpos))
     }
 
     fn handle_multiline_blockquote(&mut self, container: &mut Node<'a>, line: &str) -> bool {
         let Some(matched) = self.detect_multiline_blockquote(line) else {
             return false;
         };
+        if !nesting_fits(container) {
+            return false;
+        }
 
         let first_nonspace = self.first_nonspace;
         let offset = self.offset;
@@ -1216,12 +1268,43 @@ where
         true
     }
 
-    fn detect_multiline_blockquote(&self, line: &str) -> Option<usize> {
-        if self.options.extension.multiline_block_quotes {
-            scanners::open_multiline_block_quote_fence(&line[self.first_nonspace..])
-        } else {
-            None
+    fn detect_multiline_blockquote(&mut self, line: &str) -> Option<usize> {
+        if !self.options.extension.multiline_block_quotes {
+            return None;
         }
+        let run = self.marker_run(line)?;
+        let fence_length = run.end - self.first_nonspace;
+        (fence_length >= 3 && run.blank_after).then_some(fence_length)
+    }
+
+    fn marker_run(&mut self, line: &str) -> Option<MarkerRun> {
+        let start = self.first_nonspace;
+        if let Some(run) = self.marker_run
+            && (run.start..run.end).contains(&start)
+        {
+            return Some(run);
+        }
+
+        let bytes = line.as_bytes();
+        let end = start + bytes[start..].iter().take_while(|&&b| b == b'>').count();
+        if end == start {
+            return None;
+        }
+        let run = MarkerRun {
+            start,
+            end,
+            blank_after: bytes[end..]
+                .iter()
+                .find(|&&b| !strings::is_space_or_tab(b))
+                .is_none_or(|&b| strings::is_line_end_char(b)),
+            alert: if self.options.extension.alerts {
+                alert_after_run(line, end, self.first_nonspace_column + end - start)
+            } else {
+                None
+            },
+        };
+        self.marker_run = Some(run);
+        Some(run)
     }
 
     fn handle_blockquote(&mut self, container: &mut Node<'a>, line: &str) -> bool {
@@ -1626,51 +1709,28 @@ where
     }
 
     #[cfg(feature = "phoenix_heex")]
-    fn has_unclosed_heex_directive(&self, node: Node<'a>) -> bool {
+    fn has_unclosed_heex_directive(&mut self, node: Node<'a>) -> bool {
         let data = node.data();
         let content = &data.lines.as_ref().unwrap().content;
+        let key = std::ptr::from_ref(node).cast();
 
-        if !content.as_bytes().contains(&b'<') {
-            return false;
+        let (scanned_node, scanned, mut unclosed) = self.heex_paragraph_scan;
+        let from = if scanned_node == key && scanned <= content.len() {
+            scanned
+        } else {
+            unclosed = false;
+            0
+        };
+
+        let added = &content[from..];
+        if let Some(open) = added.rfind("<%") {
+            unclosed = !added[open + 2..].contains("%>");
+        } else if unclosed {
+            unclosed = !added.contains("%>");
         }
 
-        let bytes = content.as_bytes();
-        let len = bytes.len();
-
-        let mut i = 0;
-        let mut in_directive = false;
-        let mut in_comment = false;
-
-        while i < len {
-            if i + 1 < len && bytes[i] == b'<' && bytes[i + 1] == b'%' {
-                in_directive = true;
-                if (i + 2 < len && bytes[i + 2] == b'#')
-                    || (i + 3 < len && bytes[i + 2] == b'!' && bytes[i + 3] == b'-')
-                {
-                    in_comment = true;
-                }
-                i += 2;
-            } else if in_directive && i + 1 < len && bytes[i] == b'%' && bytes[i + 1] == b'>' {
-                in_directive = false;
-                in_comment = false;
-                i += 2;
-            } else if in_directive
-                && in_comment
-                && i + 3 < len
-                && bytes[i] == b'-'
-                && bytes[i + 1] == b'-'
-                && bytes[i + 2] == b'%'
-                && bytes[i + 3] == b'>'
-            {
-                in_directive = false;
-                in_comment = false;
-                i += 4;
-            } else {
-                i += 1;
-            }
-        }
-
-        in_directive
+        self.heex_paragraph_scan = (key, content.len(), unclosed);
+        unclosed
     }
 
     #[cfg(feature = "phoenix_heex")]
@@ -1824,8 +1884,8 @@ where
         }
     }
 
-    fn handle_footnote(&mut self, container: &mut Node<'a>, line: &str, depth: usize) -> bool {
-        let Some(matched) = self.detect_footnote(line, depth) else {
+    fn handle_footnote(&mut self, container: &mut Node<'a>, line: &str) -> bool {
+        let Some(matched) = self.detect_footnote(container, line) else {
             return false;
         };
 
@@ -1845,9 +1905,10 @@ where
         true
     }
 
-    fn detect_footnote(&self, line: &str, depth: usize) -> Option<usize> {
-        if self.options.extension.footnotes && depth < MAX_LIST_DEPTH {
+    fn detect_footnote(&self, container: Node<'a>, line: &str) -> Option<usize> {
+        if self.options.extension.footnotes {
             scanners::footnote_definition(&line[self.first_nonspace..])
+                .filter(|_| nesting_fits(container))
         } else {
             None
         }
@@ -1860,6 +1921,7 @@ where
             || !bytes
                 .get(self.first_nonspace + 1)
                 .is_none_or(|&b| strings::is_space_or_tab(b) || strings::is_line_end_char(b))
+            || !nesting_fits(container)
         {
             return false;
         }
@@ -1984,14 +2046,8 @@ where
         }
     }
 
-    fn handle_list(
-        &mut self,
-        container: &mut Node<'a>,
-        line: &str,
-        indented: bool,
-        depth: usize,
-    ) -> bool {
-        let Some((matched, mut nl)) = self.detect_list(container, line, indented, depth) else {
+    fn handle_list(&mut self, container: &mut Node<'a>, line: &str, indented: bool) -> bool {
+        let Some((matched, mut nl)) = self.detect_list(container, line, indented) else {
             return false;
         };
 
@@ -2046,17 +2102,14 @@ where
         container: Node<'a>,
         line: &str,
         indented: bool,
-        depth: usize,
     ) -> Option<(usize, NodeList)> {
-        if (!indented || node_matches!(container, NodeValue::List(..)))
-            && self.indent < 4
-            && depth < MAX_LIST_DEPTH
-        {
+        if (!indented || node_matches!(container, NodeValue::List(..))) && self.indent < 4 {
             parse_list_marker(
                 line,
                 self.first_nonspace,
                 node_matches!(container, NodeValue::Paragraph),
             )
+            .filter(|_| nesting_fits(container))
         } else {
             None
         }
@@ -3219,7 +3272,7 @@ where
             return;
         }
 
-        if !spx.is_literal_at(0, end) {
+        if !spx.literal_cursor().is_literal_at(0, end) {
             return;
         }
 
@@ -3518,6 +3571,36 @@ pub enum AutolinkType {
     Email,
 }
 
+pub(crate) struct LiteralCursor<'s> {
+    items: &'s [(Sourcepos, usize)],
+    pos: usize,
+}
+
+impl LiteralCursor<'_> {
+    pub(crate) fn is_literal_at(&mut self, start: usize, len: usize) -> bool {
+        while let [(_, x), rest @ ..] = self.items
+            && self.pos + x <= start
+        {
+            self.pos += x;
+            self.items = rest;
+        }
+
+        let end = start + len;
+        let mut pos = self.pos;
+        for &(sp, x) in self.items {
+            if pos >= end {
+                return true;
+            }
+            if sp.start.line != sp.end.line || sp.end.column - sp.start.column + 1 != x {
+                return false;
+            }
+            pos += x;
+        }
+        assert!(pos >= end);
+        true
+    }
+}
+
 #[derive(Clone)]
 pub(crate) struct Spx {
     items: SmallVec<[(Sourcepos, usize); 4]>,
@@ -3577,22 +3660,11 @@ impl Spx {
         }
     }
 
-    pub(crate) fn is_literal_at(&self, start: usize, len: usize) -> bool {
-        let end = start + len;
-        let mut pos = 0;
-        for &(sp, x) in &self.items[self.front..] {
-            if pos >= end {
-                return true;
-            }
-            if pos + x > start
-                && (sp.start.line != sp.end.line || sp.end.column - sp.start.column + 1 != x)
-            {
-                return false;
-            }
-            pos += x;
+    pub(crate) fn literal_cursor(&self) -> LiteralCursor<'_> {
+        LiteralCursor {
+            items: &self.items[self.front..],
+            pos: 0,
         }
-        assert!(pos >= end);
-        true
     }
 
     pub(crate) fn next_column(&self) -> Option<usize> {

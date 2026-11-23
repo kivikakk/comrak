@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::mem;
 
 use crate::entity;
@@ -58,7 +59,10 @@ pub fn parse(input: &str) -> Option<(Attributes, usize)> {
                         state = State::Key(c.to_string());
                         break;
                     }
-                    '}' => return Some((attrs, i + 1)),
+                    '}' => {
+                        dedupe_pairs(&mut attrs.pairs);
+                        return Some((attrs, i + 1));
+                    }
                     ' ' | '\t' | '\r' | '\n' => break,
                     _ => return None,
                 },
@@ -187,21 +191,33 @@ fn set_pair(attrs: &mut Attributes, key: String, value: String) {
     } else if key.eq_ignore_ascii_case("class") {
         add_class(attrs, value);
     } else {
-        attrs.pairs.retain(|(k, _)| !k.eq_ignore_ascii_case(&key));
         attrs.pairs.push((key, value));
     }
 }
 
-pub fn merge(into: &mut Attributes, from: Attributes) {
-    if from.id.is_some() {
-        into.id = from.id;
+fn dedupe_pairs(pairs: &mut Vec<(String, String)>) {
+    let mut seen = HashSet::new();
+    let mut kept: Vec<_> = pairs
+        .drain(..)
+        .rev()
+        .filter(|(key, _)| seen.insert(key.to_ascii_lowercase()))
+        .collect();
+    kept.reverse();
+    *pairs = kept;
+}
+
+pub fn parse_chained(input: &str) -> Option<(Attributes, usize)> {
+    let (mut attrs, mut i) = parse(input)?;
+    while let Some((more, j)) = parse(&input[i..]) {
+        if more.id.is_some() {
+            attrs.id = more.id;
+        }
+        attrs.classes.extend(more.classes);
+        attrs.pairs.extend(more.pairs);
+        i += j;
     }
-    for class in from.classes {
-        add_class(into, class);
-    }
-    for (key, value) in from.pairs {
-        set_pair(into, key, value);
-    }
+    dedupe_pairs(&mut attrs.pairs);
+    Some((attrs, i))
 }
 
 /// Use this only in contexts where there can *not* be any following text

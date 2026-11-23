@@ -136,6 +136,12 @@ pub struct Subject<'a: 'd, 'r, 'o, 'd, 'c, 'p> {
     pub scanned_for_backticks: bool,
     no_link_openers: bool,
     pub(crate) relaxed_autolink_dead_zone_end: usize,
+    pub(crate) autolink_extent: Range<usize>,
+    bracket_closers: Option<FxHashMap<usize, usize>>,
+    latex_math_no_closer_from: [usize; 2],
+    before_char_walk: Cell<(usize, usize)>,
+    two_before_char_walk: Cell<(usize, usize)>,
+    after_char_walk: Cell<(usize, usize)>,
 }
 
 #[derive(Default)]
@@ -183,6 +189,12 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             scanned_for_backticks: false,
             no_link_openers: true,
             relaxed_autolink_dead_zone_end: 0,
+            autolink_extent: 0..0,
+            bracket_closers: None,
+            latex_math_no_closer_from: [usize::MAX; 2],
+            before_char_walk: Cell::new((0, 0)),
+            two_before_char_walk: Cell::new((0, 0)),
+            after_char_walk: Cell::new((usize::MAX, 0)),
         }
     }
 
@@ -1214,29 +1226,14 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         // We're at ^, next should be [
         self.scanner.pos += 2; // Skip ^[
 
-        // Find the closing ]
-        let mut depth = 1;
-        let mut endpos = self.scanner.pos;
-        while endpos < self.input.len() && depth > 0 {
-            match self.input.as_bytes()[endpos] {
-                b'[' => depth += 1,
-                b']' => depth -= 1,
-                b'\\' if endpos + 1 < self.input.len() => {
-                    endpos += 1; // Skip escaped character
-                }
-                _ => {}
-            }
-            endpos += 1;
-        }
-
-        if depth != 0 {
+        let closers = self
+            .bracket_closers
+            .get_or_insert_with(|| match_brackets(&self.input));
+        let Some(&endpos) = closers.get(&(startpos + 1)) else {
             // No matching closing bracket, treat as regular text
             self.scanner.pos = startpos + 1;
             return Some(self.make_inline(NodeValue::Text("^".into()), startpos, startpos));
-        }
-
-        // endpos is now one past the ], so adjust
-        endpos -= 1;
+        };
 
         // Extract the content
         let content = &self.input[self.scanner.pos..endpos];
@@ -2087,11 +2084,6 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
     ////////////////////
 
     #[inline]
-    fn eof(&self) -> bool {
-        self.scanner.eof(&self.input)
-    }
-
-    #[inline]
     fn peek_byte(&self) -> Option<u8> {
         self.scanner.peek_byte(&self.input)
     }
@@ -2219,14 +2211,25 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         }
     }
 
-    fn scan_to_closing_latex_math(&self, startpos: usize, closing_delimiter: u8) -> Option<usize> {
+    fn scan_to_closing_latex_math(
+        &mut self,
+        startpos: usize,
+        closing_delimiter: u8,
+    ) -> Option<usize> {
         let bytes = self.input.as_bytes();
         let input = bytes.get(startpos..)?;
         let matcher = backslash_matcher();
+        let leading_run_end = startpos + input.iter().take_while(|&&b| b == b'\\').count();
+        let no_closer_from =
+            &mut self.latex_math_no_closer_from[usize::from(closing_delimiter == b']')];
+        let known_absent = startpos >= *no_closer_from;
 
         let mut escaped_until = startpos;
         for index in matcher.iter(input) {
             let pos = startpos + index;
+            if known_absent && pos > leading_run_end {
+                return None;
+            }
             if pos < escaped_until {
                 continue;
             }
@@ -2236,20 +2239,32 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             escaped_until = pos + 2;
         }
 
+        if !known_absent {
+            *no_closer_from = leading_run_end;
+        }
         None
     }
 
-    fn get_before_char(&self, pos: usize) -> (char, Option<usize>) {
+    fn get_before_char(&self, pos: usize, walk: &Cell<(usize, usize)>) -> (char, Option<usize>) {
         if pos == 0 {
             return ('\n', None);
         }
+        let (cached_pos, cached_before) = walk.get();
         let mut before_char_pos = pos - 1;
-        while before_char_pos > 0
-            && (self.input.as_bytes()[before_char_pos] >> 6 == 2
-                || self.tables.skip[self.input.as_bytes()[before_char_pos] as usize])
-        {
+        loop {
+            if before_char_pos + 1 == cached_pos {
+                before_char_pos = cached_before;
+                break;
+            }
+            if !(before_char_pos > 0
+                && (self.input.as_bytes()[before_char_pos] >> 6 == 2
+                    || self.tables.skip[self.input.as_bytes()[before_char_pos] as usize]))
+            {
+                break;
+            }
             before_char_pos -= 1;
         }
+        walk.set((pos, before_char_pos));
         match self.input[before_char_pos..pos].chars().next() {
             Some(x) => {
                 if (x as usize) < 256 && self.tables.skip[x as usize] {
@@ -2262,8 +2277,32 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         }
     }
 
+    fn get_after_char(&self, pos: usize) -> char {
+        if pos >= self.input.len() {
+            return '\n';
+        }
+        let (walk_start, walk_end) = self.after_char_walk.get();
+        let mut after_char_pos = pos;
+        if (walk_start..=walk_end).contains(&after_char_pos) {
+            after_char_pos = walk_end;
+        } else {
+            while after_char_pos < self.input.len() - 1
+                && self.tables.skip[self.input.as_bytes()[after_char_pos] as usize]
+            {
+                after_char_pos += 1;
+            }
+            self.after_char_walk.set((pos, after_char_pos));
+        }
+        match self.input[after_char_pos..].chars().next() {
+            Some(x) if (x as usize) < 256 && self.tables.skip[x as usize] => '\n',
+            Some(x) => x,
+            None => '\n',
+        }
+    }
+
     fn scan_delims(&mut self, b: u8) -> (usize, bool, bool) {
-        let (before_char, before_char_pos) = self.get_before_char(self.scanner.pos);
+        let (before_char, before_char_pos) =
+            self.get_before_char(self.scanner.pos, &self.before_char_walk);
 
         let mut numdelims = 0;
         if b == b'\'' || b == b'"' {
@@ -2276,26 +2315,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             }
         }
 
-        let after_char = if self.eof() {
-            '\n'
-        } else {
-            let mut after_char_pos = self.scanner.pos;
-            while after_char_pos < self.input.len() - 1
-                && self.tables.skip[self.input.as_bytes()[after_char_pos] as usize]
-            {
-                after_char_pos += 1;
-            }
-            match self.input[after_char_pos..].chars().next() {
-                Some(x) => {
-                    if (x as usize) < 256 && self.tables.skip[x as usize] {
-                        '\n'
-                    } else {
-                        x
-                    }
-                }
-                None => '\n',
-            }
-        };
+        let after_char = self.get_after_char(self.scanner.pos);
 
         let cjk_friendly = self.options.extension.cjk_friendly_emphasis;
         let mut two_before_char: Option<char> = None;
@@ -2314,7 +2334,8 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                     after_char.is_cjk()
                         || if before_char.is_non_emoji_general_purpose_vs() {
                             if let Some(before_char_pos) = before_char_pos {
-                                let (two_before_char_, _) = self.get_before_char(before_char_pos);
+                                let (two_before_char_, _) = self
+                                    .get_before_char(before_char_pos, &self.two_before_char_walk);
                                 two_before_char = Some(two_before_char_);
                                 two_before_char_.is_cjk()
                                     || two_before_char_.is_cmark_punctuation()
@@ -2339,7 +2360,8 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                             let two_before_char = if let Some(two_before_char_) = two_before_char {
                                 two_before_char_
                             } else if let Some(before_char_pos) = before_char_pos {
-                                let (two_before_char_, _) = self.get_before_char(before_char_pos);
+                                let (two_before_char_, _) = self
+                                    .get_before_char(before_char_pos, &self.two_before_char_walk);
                                 two_before_char = Some(two_before_char_);
                                 two_before_char_
                             } else {
@@ -2367,7 +2389,8 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                             let two_before_char = if let Some(two_before_char_) = two_before_char {
                                 two_before_char_
                             } else if let Some(before_char_pos) = before_char_pos {
-                                self.get_before_char(before_char_pos).0
+                                self.get_before_char(before_char_pos, &self.two_before_char_walk)
+                                    .0
                             } else {
                                 '\n'
                             };
@@ -2419,13 +2442,9 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
 
     #[cfg(feature = "attributes")]
     fn handle_potential_attribute(&mut self, node: Node<'a>, parent_line_offsets: &[usize]) {
-        let Some((mut attrs, mut i)) = attributes::parse(&self.input[self.scanner.pos..]) else {
+        let Some((attrs, i)) = attributes::parse_chained(&self.input[self.scanner.pos..]) else {
             return;
         };
-        while let Some((more, j)) = attributes::parse(&self.input[self.scanner.pos + i..]) {
-            attributes::merge(&mut attrs, more);
-            i += j;
-        }
 
         let mut ast = node.data_mut();
         let (lines, last_line) = count_newlines(&self.input[self.scanner.pos..][..i]);
@@ -2440,6 +2459,27 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         }
         ast.attrs = Some(Box::new(attrs));
     }
+}
+
+fn match_brackets(input: &str) -> FxHashMap<usize, usize> {
+    let bytes = input.as_bytes();
+    let mut closers = FxHashMap::default();
+    let mut openers = vec![];
+    let mut i = 0;
+    while i < bytes.len() {
+        match bytes[i] {
+            b'[' => openers.push(i),
+            b']' => {
+                if let Some(opener) = openers.pop() {
+                    closers.insert(opener, i);
+                }
+            }
+            b'\\' => i += 1,
+            _ => {}
+        }
+        i += 1;
+    }
+    closers
 }
 
 pub struct RefMap {

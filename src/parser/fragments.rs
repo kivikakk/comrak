@@ -72,6 +72,8 @@ where
             self.delimiter_arena,
         );
         child.refmap = mem::replace(&mut self.refmap, RefMap::new());
+        child.autocompleted_cells = self.autocompleted_cells;
+        child.max_autocompleted_cells = self.max_autocompleted_cells;
         child.grid_table_suppressed = suppress_grid_tables;
         child.grid_table_depth = self.grid_table_depth + 1;
 
@@ -88,6 +90,7 @@ where
 
     fn reclaim(&mut self, child: Parser<'a, 'o, 'c, 'd>, fragments: &[Fragment<'_>]) {
         self.refmap = child.refmap;
+        self.autocompleted_cells = child.autocompleted_cells;
         self.cell_line_ends.extend(
             child
                 .cell_line_ends

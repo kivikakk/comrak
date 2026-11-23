@@ -6,6 +6,7 @@
 //! specialisation of formatting for specific node types.
 
 mod anchorizer;
+mod block_ids;
 mod context;
 #[cfg(feature = "grid_table")]
 mod grid_table;
@@ -34,6 +35,7 @@ use crate::{node_matches, scanners};
 
 #[doc(hidden)]
 pub use anchorizer::Anchorizer;
+pub(crate) use block_ids::BlockIds;
 pub use context::Context;
 pub(crate) use table_cell_indexer::TableCellIndexer;
 
@@ -293,6 +295,7 @@ pub fn format_document_with_formatter<'a, 'o, 'c: 'o, T>(
     // onto the stack and begin rendering first child.
 
     let mut context = Context::new(output, options, plugins, user);
+    context.block_ids = BlockIds::new(options, root);
 
     reserve_written_ids(&mut context, root);
 
@@ -549,7 +552,7 @@ fn reserve_written_ids<T>(context: &mut Context<T>, root: Node<'_>) {
             _ => {}
         }
         written.extend(explicit);
-        if let Some(name) = block_id(options, node) {
+        if let Some(name) = context.block_ids.get(node) {
             written.push(format!("^{name}"));
         }
     }
@@ -602,67 +605,14 @@ fn extend_with_attributes<'a, T>(
 /// Renders the `id` attribute of a block labelled by a trailing Obsidian block
 /// identifier, e.g. `id="^abc123"`.
 pub fn render_block_id<T>(context: &mut Context<T>, node: Node<'_>) -> fmt::Result {
-    let Some(name) = block_id(context.options, node) else {
+    let Some(name) = context.block_ids.get(node) else {
         return Ok(());
     };
 
+    let name = name.to_string();
     context.write_str(" id=\"^")?;
     context.escape(&name)?;
     context.write_str("\"")
-}
-
-fn block_id(options: &Options<'_>, node: Node<'_>) -> Option<String> {
-    if !options.extension.ofm_block_ids
-        || (options.extension.header_id_prefix.is_some()
-            && node_matches!(node, NodeValue::Heading(_)))
-    {
-        return None;
-    }
-
-    let name = trailing_marker(node)?;
-    let mut ancestor = node.parent();
-    while let Some(a) = ancestor {
-        if is_labelled_container(a) && trailing_marker(a).as_deref() == Some(&name) {
-            return None;
-        }
-        ancestor = a.parent();
-    }
-
-    Some(name)
-}
-
-fn is_labelled_container(node: Node<'_>) -> bool {
-    node_matches!(
-        node,
-        NodeValue::BlockQuote
-            | NodeValue::MultilineBlockQuote(_)
-            | NodeValue::Table(_)
-            | NodeValue::Callout(_)
-            | NodeValue::Alert(_)
-            | NodeValue::DescriptionTerm
-            | NodeValue::DescriptionDetails
-            | NodeValue::Subtext
-            | NodeValue::BlockDirective(_)
-            | NodeValue::Item(_)
-            | NodeValue::TaskItem(_)
-    )
-}
-
-fn trailing_marker(node: Node<'_>) -> Option<String> {
-    let mut current = node;
-    while let Some(last) = current.last_child() {
-        match last.data().value {
-            NodeValue::BlockId(ref n) => return Some(n.name.clone()),
-            NodeValue::List(_)
-            | NodeValue::Item(_)
-            | NodeValue::TaskItem(_)
-            | NodeValue::DescriptionList
-            | NodeValue::DescriptionItem(_) => return None,
-            _ => current = last,
-        }
-    }
-
-    None
 }
 
 fn render_block_directive<T>(
@@ -883,7 +833,7 @@ fn render_heading<T>(
                 #[cfg(feature = "attributes")]
                 {
                     let id_written = context.options.extension.header_id_prefix.is_some()
-                        || block_id(context.options, node).is_some();
+                        || context.block_ids.get(node).is_some();
                     let written =
                         written_with_sourcepos(context, if id_written { &["id"] } else { &[] });
                     write_attributes(context, node, &written)?;

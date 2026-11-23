@@ -22,11 +22,12 @@ awk '
 ' extensions.txt >"$specs/extensions.txt"
 sed -e 's/aaa\\rbbb\\n-\\v\\n/aaa\\rbbb\\n|-\\n/' \
 	-e 's/<td>-\\x0b<\/td>/<td>-<\/td>/' \
+	-e 's/^allowed_failures = {"many references": True}$/allowed_failures = {"many references": True, "deeply nested lists": True}/' \
 	pathological_tests.py >"$specs/pathological_tests.py"
 for f in spec.txt extensions.txt; do
 	test "$(diff "$f" "$specs/$f" | grep -c '^>')" = 1
 done
-test "$(diff pathological_tests.py "$specs/pathological_tests.py" | grep -c '^>')" = 2
+test "$(diff pathological_tests.py "$specs/pathological_tests.py" | grep -c '^>')" = 3
 sed -e 's/^<p>|Tot\.\.\.\.\.\[^_a_\]|<\/p>$/<p>|Tot.....[^<em>a<\/em>]|<\/p>/' \
 	-e 's/^<p>\[^~~is~~1\]<\/p>$/<p>[^<del>is<\/del>1]<\/p>/' \
 	regression.txt >"$specs/regression.txt"

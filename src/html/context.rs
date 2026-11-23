@@ -1,4 +1,4 @@
-use crate::html::{self, Anchorizer, TableCellIndexer};
+use crate::html::{self, Anchorizer, BlockIds, TableCellIndexer};
 use crate::{Options, options::Plugins};
 
 use std::cell::Cell;
@@ -26,6 +26,7 @@ pub struct Context<'o, 'c, T = ()> {
     pub(super) footnote_ix: u32,
     pub(super) written_footnote_ix: u32,
     pub(super) table_cell_indexer: TableCellIndexer,
+    pub(super) block_ids: BlockIds,
 }
 
 impl<'o, 'c, T> Context<'o, 'c, T> {
@@ -47,6 +48,7 @@ impl<'o, 'c, T> Context<'o, 'c, T> {
             written_footnote_ix: 0,
             current_heading_text: None,
             table_cell_indexer: TableCellIndexer::default(),
+            block_ids: BlockIds::default(),
         }
     }
 
