@@ -377,6 +377,59 @@ fn pathological_autolink_email_non_literal() {
 
 #[test]
 #[timeout(4000)]
+fn pathological_block_ids_long_name_nested() {
+    let n = 40_000;
+    let name = "a".repeat(n);
+    let input = format!("{} x ^{name}\n", ">".repeat(n));
+
+    let mut options = Options::default();
+    options.extension.ofm_block_ids = true;
+    let html = markdown_to_html(&input, &options);
+    assert_eq!(html.matches(&format!("id=\"^{name}\"")).count(), 1);
+}
+
+#[test]
+#[timeout(4000)]
+fn pathological_block_ids_subtree_renders() {
+    let n = 10_000;
+    let input = format!("{}{} x ^a\n", "> p\n>\n".repeat(n), "> ".repeat(n));
+
+    let arena = Arena::new();
+    let mut options = Options::default();
+    options.extension.ofm_block_ids = true;
+    let root = parse_document(&arena, &input, &options);
+    let mut ids = 0;
+    for child in root.first_child().unwrap().children() {
+        let mut html = String::new();
+        html::format_document(child, &options, &mut html).unwrap();
+        ids += html.matches("id=\"^a\"").count();
+    }
+    assert_eq!(ids, 0);
+}
+
+#[test]
+#[timeout(4000)]
+fn pathological_block_ids_nested() {
+    let n = 20_000;
+    let input = format!("{} x ^a\n", ">".repeat(n));
+    let exp = format!(
+        "<blockquote id=\"^a\">\n{}<p>x </p>\n{}",
+        "<blockquote>\n".repeat(n - 1),
+        "</blockquote>\n".repeat(n)
+    );
+
+    html_opts!(
+        [
+            extension.ofm_block_ids = true,
+            extension.header_id_prefix = Some("".to_owned())
+        ],
+        &input,
+        &exp
+    );
+}
+
+#[test]
+#[timeout(4000)]
 fn pathological_header_ids() {
     let n = 20_000;
     let input = "# a\n".repeat(n);
