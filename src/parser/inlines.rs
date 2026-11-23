@@ -139,6 +139,8 @@ pub struct Subject<'a: 'd, 'r, 'o, 'd, 'c, 'p> {
     pub(crate) autolink_extent: Range<usize>,
     bracket_closers: Option<FxHashMap<usize, usize>>,
     latex_math_no_closer_from: [usize; 2],
+    #[cfg(feature = "attributes")]
+    rejected_attribute_openers: attributes::RejectedOpeners,
     before_char_walk: Cell<(usize, usize)>,
     two_before_char_walk: Cell<(usize, usize)>,
     after_char_walk: Cell<(usize, usize)>,
@@ -192,6 +194,8 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             autolink_extent: 0..0,
             bracket_closers: None,
             latex_math_no_closer_from: [usize::MAX; 2],
+            #[cfg(feature = "attributes")]
+            rejected_attribute_openers: attributes::RejectedOpeners::default(),
             before_char_walk: Cell::new((0, 0)),
             two_before_char_walk: Cell::new((0, 0)),
             after_char_walk: Cell::new((usize::MAX, 0)),
@@ -2442,7 +2446,11 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
 
     #[cfg(feature = "attributes")]
     fn handle_potential_attribute(&mut self, node: Node<'a>, parent_line_offsets: &[usize]) {
-        let Some((attrs, i)) = attributes::parse_chained(&self.input[self.scanner.pos..]) else {
+        let Some((attrs, i)) = attributes::parse_chained(
+            &self.input,
+            self.scanner.pos,
+            &mut self.rejected_attribute_openers,
+        ) else {
             return;
         };
 

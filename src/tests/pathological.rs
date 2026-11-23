@@ -489,6 +489,66 @@ fn pathological_attribute_chain() {
     );
 }
 
+#[cfg(feature = "attributes")]
+#[test]
+#[timeout(4000)]
+fn pathological_link_attributes_unclosed() {
+    let n = 30_000;
+    let input = "[a](b){.c k=".repeat(n);
+    let exp = format!("<p>{}</p>\n", "<a href=\"b\">a</a>{.c k=".repeat(n));
+
+    html_opts!([extension.link_attributes], &input, &exp);
+}
+
+#[cfg(feature = "attributes")]
+#[test]
+#[timeout(4000)]
+fn pathological_link_attributes_rejected() {
+    let n = 30_000;
+    let input = format!("{}<", "[a](b){.c k=".repeat(n));
+    let exp = format!("<p>{}&lt;</p>\n", "<a href=\"b\">a</a>{.c k=".repeat(n));
+
+    html_opts!([extension.link_attributes], &input, &exp);
+}
+
+#[cfg(feature = "attributes")]
+#[test]
+#[timeout(4000)]
+fn pathological_header_attributes_unparsable_openers() {
+    let n = 30_000;
+    let content = format!("h {} !}}", "{.a k=x".repeat(n));
+    let input = format!("# {content}\n");
+    let exp = format!("<h1>{content}</h1>\n");
+
+    html_opts!([extension.header_attributes], &input, &exp);
+}
+
+#[cfg(feature = "attributes")]
+#[test]
+#[timeout(4000)]
+fn pathological_header_attributes_spaced_unparsable_openers() {
+    let n = 30_000;
+    let content = format!("h{} !}}", " {.a k=x".repeat(n));
+    let input = format!("# {content}\n");
+    let exp = format!("<h1>{content}</h1>\n");
+
+    html_opts!([extension.header_attributes], &input, &exp);
+}
+
+#[cfg(feature = "attributes")]
+#[test]
+#[timeout(4000)]
+fn pathological_fenced_code_attributes_unparsable_openers() {
+    let n = 30_000;
+    let input = format!("``` h {} !}}\nx\n```\n", "{.a k=x".repeat(n));
+
+    html_opts!(
+        [extension.fenced_code_attributes],
+        &input,
+        "<pre><code class=\"language-h\">x\n</code></pre>\n"
+    );
+}
+
 #[test]
 #[timeout(4000)]
 fn pathological_sourcepos_chars_long_line() {
