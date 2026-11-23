@@ -710,6 +710,99 @@ fn pathological_grid_table_commonmark_reference_area() {
 }
 
 #[cfg(feature = "grid_table")]
+fn grid_table_commonmark(input: &str, options: &Options) -> Result<String, std::fmt::Error> {
+    let arena = Arena::new();
+    let root = parse_document(&arena, input, options);
+    let mut output = String::new();
+    cm::format_document(root, options, &mut output).map(|()| output)
+}
+
+#[cfg(feature = "grid_table")]
+#[test]
+#[timeout(4000)]
+fn pathological_grid_table_commonmark_sibling_area() {
+    let tables = 2_000;
+    let input = format!(
+        "{}[r]: /{}\n[s]: /u \"{}\"\n",
+        "+-----+-----+\n| [r] | [s] |\n+-----+-----+\n\n".repeat(tables),
+        "u".repeat(360),
+        "x\n".repeat(180)
+    );
+
+    assert!(grid_table_commonmark(&input, &grid_table_options()).is_err());
+}
+
+#[cfg(feature = "grid_table")]
+#[test]
+#[timeout(4000)]
+fn pathological_grid_table_commonmark_nested_area() {
+    let box2 = |a: &str, b: &str| {
+        let sep = format!("+{}+{}+", "-".repeat(a.len() + 2), "-".repeat(b.len() + 2));
+        vec![sep.clone(), format!("| {a} | {b} |"), sep]
+    };
+    let mut lines = box2("[u0]", "[t0]");
+    let mut defs = vec![(40, 20)];
+    let (mut w, mut h) = (50, 22);
+    for level in 1..4 {
+        let (u, t) = (format!("[u{level}]"), format!("[t{level}]"));
+        let inner = lines[0].len();
+        let sep = format!("+{}+{}+", "-".repeat(inner + 2), "-".repeat(u.len() + 2));
+        let mut next = vec![sep.clone()];
+        for (i, line) in lines.iter().enumerate() {
+            let right = if i == 0 {
+                u.clone()
+            } else {
+                " ".repeat(u.len())
+            };
+            next.push(format!("| {line} | {right} |"));
+        }
+        next.push(sep.clone());
+        next.push(format!("| {t:inner$} | {} |", " ".repeat(u.len())));
+        next.push(sep);
+        lines = next;
+        let (x, y) = (w * 5 / 2, h * 5 / 2);
+        defs.push((x, y));
+        (w, h) = (w + x + 10, h + y + 2);
+    }
+    let mut input = lines.join("\n") + "\n\n";
+    for (level, (x, y)) in defs.into_iter().enumerate() {
+        input += &format!(
+            "[u{level}]: /{}\n[t{level}]: /t \"{}\"\n",
+            "u".repeat(x),
+            "x\n".repeat(y)
+        );
+    }
+
+    assert!(grid_table_commonmark(&input, &grid_table_options()).is_err());
+}
+
+#[cfg(feature = "grid_table")]
+#[test]
+fn grid_table_commonmark_cells_ignore_width() {
+    let cell = "a ".repeat(200);
+    let rule = format!(
+        "+{}+{}+\n",
+        "-".repeat(cell.len() + 2),
+        "-".repeat(cell.len() + 2)
+    );
+    let input = format!(
+        "{rule}{}",
+        format!("| {cell} | {cell} |\n{rule}").repeat(20)
+    );
+
+    let mut options = grid_table_options();
+    options.render.width = 20;
+    let output = grid_table_commonmark(&input, &options).unwrap();
+    assert_eq!(output.lines().count(), 41);
+
+    let multiline = "+---+\n| a |\n| b |\n+---+\n";
+    assert_eq!(
+        grid_table_commonmark(multiline, &options).unwrap(),
+        multiline
+    );
+}
+
+#[cfg(feature = "grid_table")]
 #[test]
 fn grid_table_commonmark_sparse_within_area() {
     let n = 2_000;
@@ -720,12 +813,10 @@ fn grid_table_commonmark_sparse_within_area() {
         format!("{rule}| {:100} |\n", "b").repeat(n) + &rule
     );
 
-    let arena = Arena::new();
-    let options = grid_table_options();
-    let root = parse_document(&arena, &input, &options);
-    let mut output = String::new();
-    cm::format_document(root, &options, &mut output).unwrap();
-    assert_eq!(output, input);
+    assert_eq!(
+        grid_table_commonmark(&input, &grid_table_options()).unwrap(),
+        input
+    );
 }
 
 #[cfg(feature = "grid_table")]

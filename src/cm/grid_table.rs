@@ -1,4 +1,5 @@
 use std::fmt;
+use std::rc::Rc;
 
 use unicode_width::UnicodeWidthChar;
 
@@ -44,15 +45,26 @@ fn offsets(sizes: &[usize]) -> Vec<usize> {
     offsets
 }
 
-fn area_budget(table: Node<'_>, cells: &[Rect]) -> usize {
-    let sourcepos = table.data().sourcepos;
-    let source = (sourcepos.end.line - sourcepos.start.line + 1) * sourcepos.end.column;
-    let content: usize = cells
-        .iter()
-        .flat_map(|cell| &cell.lines)
-        .map(String::len)
+fn area_allowance(root: Node<'_>) -> usize {
+    let source: usize = root
+        .descendants()
+        .map(|node| {
+            let ast = node.data();
+            match ast.value {
+                NodeValue::GridTable(..) => {
+                    (ast.sourcepos.end.line - ast.sourcepos.start.line + 1)
+                        * ast.sourcepos.end.column
+                }
+                NodeValue::Text(ref literal) => literal.len(),
+                NodeValue::HtmlInline(ref literal) => literal.len(),
+                NodeValue::Code(ref code) => code.literal.len(),
+                NodeValue::CodeBlock(ref code) => code.literal.len(),
+                NodeValue::HtmlBlock(ref html) => html.literal.len(),
+                _ => 0,
+            }
+        })
         .sum();
-    AREA_FACTOR * (source + content) + AREA_SLACK
+    AREA_FACTOR * source + AREA_SLACK
 }
 
 fn absorbs(node: Node<'_>) -> bool {
@@ -79,6 +91,10 @@ fn is(canvas: &[Vec<Option<String>>], y: usize, x: usize, s: &str) -> bool {
 
 impl<'a> CommonMarkFormatter<'a, '_, '_, '_> {
     pub(super) fn format_grid_table(&mut self, table: Node<'a>) -> fmt::Result {
+        if self.grid_area.get().is_none() {
+            self.grid_area.set(Some(area_allowance(self.root)));
+        }
+
         let columns = match table.data().value {
             NodeValue::GridTable(ref table) => table.columns.clone(),
             _ => unreachable!(),
@@ -96,7 +112,12 @@ impl<'a> CommonMarkFormatter<'a, '_, '_, '_> {
                     unreachable!()
                 };
                 let mut content = String::new();
-                CommonMarkFormatter::new(cell, self.options, &mut content).format(cell)?;
+                let mut formatter = CommonMarkFormatter::new(cell, self.options, &mut content);
+                formatter.width = 0;
+                formatter.allow_wrap = false;
+                formatter.root = self.root;
+                formatter.grid_area = Rc::clone(&self.grid_area);
+                formatter.format(cell)?;
                 let mut lines: Vec<String> =
                     content.lines().map(|l| l.trim_end().to_string()).collect();
                 while lines.last().is_some_and(|l| l.is_empty()) {
@@ -146,9 +167,12 @@ impl<'a> CommonMarkFormatter<'a, '_, '_, '_> {
         let ys = offsets(&heights);
         let width = xs.last().unwrap() + 1;
         let height = ys.last().unwrap() + 1;
-        if width.saturating_mul(height) > area_budget(table, &cells) {
+        let remaining = self.grid_area.get().unwrap();
+        let area = width.saturating_mul(height);
+        if area > remaining {
             return Err(fmt::Error);
         }
+        self.grid_area.set(Some(remaining - area));
         let mut canvas = vec![vec![Some(" ".to_string()); width]; height];
 
         for cell in &cells {

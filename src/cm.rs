@@ -1,6 +1,10 @@
+#[cfg(feature = "grid_table")]
+use std::cell::Cell;
 use std::cmp::max;
 use std::collections::HashSet;
 use std::fmt::{self, Write};
+#[cfg(feature = "grid_table")]
+use std::rc::Rc;
 use std::str;
 
 use crate::Arena;
@@ -91,8 +95,13 @@ struct CommonMarkFormatter<'a, 'o, 'c, 'w> {
     last_emphasis: Option<(Node<'a>, char)>,
     #[cfg(feature = "grid_table")]
     grid_table_indent: usize,
+    #[cfg(feature = "grid_table")]
+    root: Node<'a>,
+    #[cfg(feature = "grid_table")]
+    grid_area: Rc<Cell<Option<usize>>>,
     custom_escape: Option<fn(Node<'a>, char) -> bool>,
     in_table: bool,
+    width: usize,
     footnote_ix: u32,
     ol_stack: Vec<usize>,
     allow_wrap: bool,
@@ -136,8 +145,13 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
             last_emphasis: None,
             #[cfg(feature = "grid_table")]
             grid_table_indent: 0,
+            #[cfg(feature = "grid_table")]
+            root: node,
+            #[cfg(feature = "grid_table")]
+            grid_area: Rc::default(),
             custom_escape: None,
             in_table: false,
+            width: options.render.width,
             footnote_ix: 0,
             ol_stack: vec![],
             allow_wrap: options.render.width > 0 && !options.render.hardbreaks,
@@ -169,7 +183,7 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
 
         let last_was_cr = self.window.last() == Some(&b'\n');
 
-        if self.options.render.width == 0 {
+        if self.width == 0 {
             self.output.write_str(s)?;
         } else if last_was_cr {
             // Can flush.
@@ -194,7 +208,7 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
         if self.prefix.is_empty() {
             return Ok(());
         }
-        if self.options.render.width == 0 {
+        if self.width == 0 {
             self.output.write_str(&self.prefix)?;
         } else {
             self.wrap_buffer.push_str(&self.prefix);
@@ -281,8 +295,8 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
                 self.begin_content = self.begin_content && isdigit(bytes[i]);
             }
 
-            if self.options.render.width > 0
-                && self.column > self.options.render.width
+            if self.width > 0
+                && self.column > self.width
                 && !self.begin_line
                 && self.last_breakable > 0
             {
@@ -1019,10 +1033,7 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
 
     fn format_soft_break(&mut self, entering: bool) -> fmt::Result {
         if entering {
-            if !self.no_linebreaks
-                && self.options.render.width == 0
-                && !self.options.render.hardbreaks
-            {
+            if !self.no_linebreaks && self.width == 0 && !self.options.render.hardbreaks {
                 self.cr();
             } else if self.options.render.hardbreaks {
                 self.output("\n", true, Escaping::Literal)?;
