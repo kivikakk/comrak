@@ -348,12 +348,7 @@ fn valid_domain(host: &str, allow_short: bool) -> bool {
     dots > MAX_DOMAIN_DOTS || (uscores == 0 && prev_uscores == 0 && (allow_short || dots > 0))
 }
 
-fn domain_delim_ok(
-    input: &str,
-    start: usize,
-    allow_short: bool,
-    relaxed_autolinks: bool,
-) -> bool {
+fn domain_delim_ok(input: &str, start: usize, allow_short: bool, relaxed_autolinks: bool) -> bool {
     let host = host(&input[start..]);
     let valid = valid_domain(host, allow_short);
     let stripped = host.trim_end_matches(['.', '_']);

@@ -587,6 +587,20 @@ fn pathological_minimize_commonmark() {
 
 #[test]
 #[timeout(4000)]
+fn pathological_multiline_block_quote_marker_run() {
+    let n = 40_000;
+    let input = format!("{}x\n", ">".repeat(n));
+    let exp = format!(
+        "{}<p>x</p>\n{}",
+        "<blockquote>\n".repeat(n),
+        "</blockquote>\n".repeat(n)
+    );
+
+    html_opts!([extension.multiline_block_quotes], &input, &exp);
+}
+
+#[test]
+#[timeout(4000)]
 fn pathological_header_ids() {
     let n = 20_000;
     let input = "# a\n".repeat(n);

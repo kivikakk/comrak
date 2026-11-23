@@ -273,6 +273,14 @@ fn is_utf8_continuation(b: u8) -> bool {
     b & 0xc0 == 0x80
 }
 
+#[derive(Clone, Copy)]
+struct MarkerRun {
+    start: usize,
+    end: usize,
+    blank_after: bool,
+    alert: Option<(AlertType, usize)>,
+}
+
 fn alert_after_run(
     line: &str,
     mut pos: usize,
@@ -328,8 +336,7 @@ pub struct Parser<'a: 'd, 'o, 'c, 'd> {
     offset: usize,
     column: usize,
     thematic_break_kill_pos: usize,
-    alert_run_end: usize,
-    alert_run: Option<(AlertType, usize)>,
+    marker_run: Option<MarkerRun>,
     first_nonspace: usize,
     first_nonspace_column: usize,
     indent: usize,
@@ -412,8 +419,7 @@ where
             offset: 0,
             column: 0,
             thematic_break_kill_pos: 0,
-            alert_run_end: 0,
-            alert_run: None,
+            marker_run: None,
             first_nonspace: 0,
             first_nonspace_column: 0,
             indent: 0,
@@ -570,7 +576,7 @@ where
         self.first_nonspace_column = 0;
         self.indent = 0;
         self.thematic_break_kill_pos = 0;
-        self.alert_run_end = 0;
+        self.marker_run = None;
         self.blank = false;
         self.partially_consumed_tab = false;
     }
@@ -916,10 +922,9 @@ where
         };
 
         let bytes = line.as_bytes();
-        let matched = if self.indent <= 3 && bytes.get(self.first_nonspace) == Some(&b'>') {
-            scanners::close_multiline_block_quote_fence(&line[self.first_nonspace..]).unwrap_or(0)
-        } else {
-            0
+        let matched = match self.marker_run(line) {
+            Some(run) if self.indent <= 3 && run.blank_after => run.end - self.first_nonspace,
+            _ => 0,
         };
 
         if matched >= fence_length {
@@ -1233,29 +1238,9 @@ where
             return None;
         }
 
-        if self.first_nonspace >= self.alert_run_end {
-            let bytes = line.as_bytes();
-            let mut pos = self.first_nonspace;
-            while bytes.get(pos) == Some(&b'>') {
-                pos += 1;
-            }
-            if pos == self.first_nonspace {
-                return None;
-            }
-            self.alert_run_end = pos;
-            self.alert_run = alert_after_run(
-                line,
-                pos,
-                self.first_nonspace_column + pos - self.first_nonspace,
-            );
-        }
-
-        let (alert_type, title_startpos) = self.alert_run?;
-        Some((
-            alert_type,
-            self.alert_run_end - self.first_nonspace,
-            title_startpos,
-        ))
+        let run = self.marker_run(line)?;
+        let (alert_type, title_startpos) = run.alert?;
+        Some((alert_type, run.end - self.first_nonspace, title_startpos))
     }
 
     fn handle_multiline_blockquote(&mut self, container: &mut Node<'a>, line: &str) -> bool {
@@ -1284,12 +1269,43 @@ where
         true
     }
 
-    fn detect_multiline_blockquote(&self, line: &str) -> Option<usize> {
-        if self.options.extension.multiline_block_quotes {
-            scanners::open_multiline_block_quote_fence(&line[self.first_nonspace..])
-        } else {
-            None
+    fn detect_multiline_blockquote(&mut self, line: &str) -> Option<usize> {
+        if !self.options.extension.multiline_block_quotes {
+            return None;
         }
+        let run = self.marker_run(line)?;
+        let fence_length = run.end - self.first_nonspace;
+        (fence_length >= 3 && run.blank_after).then_some(fence_length)
+    }
+
+    fn marker_run(&mut self, line: &str) -> Option<MarkerRun> {
+        let start = self.first_nonspace;
+        if let Some(run) = self.marker_run
+            && (run.start..run.end).contains(&start)
+        {
+            return Some(run);
+        }
+
+        let bytes = line.as_bytes();
+        let end = start + bytes[start..].iter().take_while(|&&b| b == b'>').count();
+        if end == start {
+            return None;
+        }
+        let run = MarkerRun {
+            start,
+            end,
+            blank_after: bytes[end..]
+                .iter()
+                .find(|&&b| !strings::is_space_or_tab(b))
+                .is_none_or(|&b| strings::is_line_end_char(b)),
+            alert: if self.options.extension.alerts {
+                alert_after_run(line, end, self.first_nonspace_column + end - start)
+            } else {
+                None
+            },
+        };
+        self.marker_run = Some(run);
+        Some(run)
     }
 
     fn handle_blockquote(&mut self, container: &mut Node<'a>, line: &str) -> bool {
