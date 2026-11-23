@@ -1,6 +1,8 @@
 use std::collections::HashSet;
 use std::mem;
 
+use rustc_hash::FxHashSet;
+
 use crate::entity;
 use crate::nodes::Attributes;
 
@@ -12,7 +14,31 @@ enum Kind {
     Pair(String),
 }
 
+#[derive(Default)]
+struct BareBraces {
+    offsets: Vec<usize>,
+    settled: usize,
+}
+
+impl BareBraces {
+    fn settle(&mut self) {
+        self.settled = self.offsets.len();
+    }
+
+    fn into_settled(mut self) -> Vec<usize> {
+        self.offsets.truncate(self.settled);
+        self.offsets
+    }
+}
+
 pub fn parse(input: &str) -> Option<(Attributes, usize)> {
+    parse_noting_bare_braces(input, &mut BareBraces::default())
+}
+
+fn parse_noting_bare_braces(
+    input: &str,
+    bare_braces: &mut BareBraces,
+) -> Option<(Attributes, usize)> {
     let mut ci = input.char_indices();
     if ci.next()?.1 != '{' {
         return None;
@@ -39,7 +65,10 @@ pub fn parse(input: &str) -> Option<(Attributes, usize)> {
     // Is ASCII whitespace also '\v' | '\f'? Does anyone mind?
 
     loop {
-        let (i, c) = ci.next()?;
+        let Some((i, c)) = ci.next() else {
+            bare_braces.settle();
+            return None;
+        };
         if i < skip_to {
             continue;
         }
@@ -76,6 +105,7 @@ pub fn parse(input: &str) -> Option<(Attributes, usize)> {
                             return None;
                         }
                         parse_attribute_value(kind, value, &mut attrs);
+                        bare_braces.settle();
                         state = State::Betwixt;
                         // handle in loop
                     }
@@ -95,6 +125,9 @@ pub fn parse(input: &str) -> Option<(Attributes, usize)> {
                         break;
                     }
                     _ if matches!(kind, Kind::Pair(_)) && is_unquoted_value_char(c) => {
+                        if c == '{' {
+                            bare_braces.offsets.push(i);
+                        }
                         value.push(c);
                         break;
                     }
@@ -206,9 +239,35 @@ fn dedupe_pairs(pairs: &mut Vec<(String, String)>) {
     *pairs = kept;
 }
 
-pub fn parse_chained(input: &str) -> Option<(Attributes, usize)> {
-    let (mut attrs, mut i) = parse(input)?;
-    while let Some((more, j)) = parse(&input[i..]) {
+#[derive(Default)]
+pub struct RejectedOpeners(FxHashSet<usize>);
+
+fn parse_sanctioned(
+    input: &str,
+    offset: usize,
+    rejected: &mut RejectedOpeners,
+) -> Option<(Attributes, usize)> {
+    if rejected.0.contains(&offset) {
+        return None;
+    }
+
+    let mut bare_braces = BareBraces::default();
+    let parsed = parse_noting_bare_braces(&input[offset..], &mut bare_braces);
+    if parsed.is_none() {
+        rejected
+            .0
+            .extend(bare_braces.into_settled().into_iter().map(|i| offset + i));
+    }
+    parsed
+}
+
+pub fn parse_chained(
+    input: &str,
+    offset: usize,
+    rejected: &mut RejectedOpeners,
+) -> Option<(Attributes, usize)> {
+    let (mut attrs, mut i) = parse_sanctioned(input, offset, rejected)?;
+    while let Some((more, j)) = parse_sanctioned(input, offset + i, rejected) {
         if more.id.is_some() {
             attrs.id = more.id;
         }
@@ -257,31 +316,18 @@ pub fn parse_off(content: &mut String) -> Option<Attributes> {
                         break;
                     }
                     '{' => {
+                        let kept = content[..i].trim_end().len();
+                        if kept == i && i > 0 {
+                            break;
+                        }
+
                         let Some((attrs, _)) =
                             parse(&content[i..]).filter(|&(_, j)| i + j == end.unwrap())
                         else {
                             break;
                         };
 
-                        // Either there's nothing left (fine!) ORRRRR there's *at least*
-                        // one (but possibly multiple) whitespace, which we truncate.
-                        let Some((mut i, c)) = ci.next() else {
-                            content.truncate(i);
-                            return Some(attrs);
-                        };
-
-                        if !c.is_whitespace() {
-                            return None;
-                        }
-
-                        for (i2, c) in ci {
-                            if !c.is_whitespace() {
-                                break;
-                            }
-                            i = i2;
-                        }
-
-                        content.truncate(i);
+                        content.truncate(kept);
                         return Some(attrs);
                     }
                     _ => break,
@@ -407,6 +453,13 @@ mod tests {
         );
     }
 
+    fn classes(classes: &[&str]) -> Option<Attributes> {
+        Some(Attributes {
+            classes: classes.iter().map(|c| c.to_string()).collect(),
+            ..Default::default()
+        })
+    }
+
     fn pairs(pairs: &[(&str, &str)]) -> Option<Attributes> {
         Some(Attributes {
             pairs: pairs
@@ -485,6 +538,34 @@ mod tests {
     }
 
     #[test]
+    fn settled_bare_braces_of_failed_parses_are_rejected() {
+        const TOKENS: [&str; 12] = [
+            "{", "}", "k", "=", ".", "#", " ", "\"", "\\", "&amp;", "[", "<",
+        ];
+        const LENGTH: u32 = 5;
+
+        let mut rejected = 0;
+        for n in 0..TOKENS.len().pow(LENGTH) {
+            let mut input = "{k=".to_string();
+            let mut n = n;
+            for _ in 0..LENGTH {
+                input.push_str(TOKENS[n % TOKENS.len()]);
+                n /= TOKENS.len();
+            }
+
+            let mut bare_braces = BareBraces::default();
+            if parse_noting_bare_braces(&input, &mut bare_braces).is_some() {
+                continue;
+            }
+            for i in bare_braces.into_settled() {
+                assert_eq!(parse(&input[i..]), None, "{input:?} at {i}");
+                rejected += 1;
+            }
+        }
+        assert!(rejected > 0);
+    }
+
+    #[test]
     fn parses_off() {
         assert_parse_off("hi", "hi", None);
         assert_parse_off(
@@ -499,6 +580,10 @@ mod tests {
         assert_parse_off("Well!{#yay}", "Well!{#yay}", None);
 
         assert_parse_off("hi {k=a{b}", "hi", pairs(&[("k", "a{b")]));
+        assert_parse_off("hi {k=a{.b}", "hi", pairs(&[("k", "a{.b")]));
+        assert_parse_off("hi {k=a {.b}", "hi {k=a", classes(&["b"]));
+        assert_parse_off("{.b}", "", classes(&["b"]));
+        assert_parse_off("hi\u{a0}{.b}", "hi", classes(&["b"]));
 
         assert_parse_off(
             "Well! {#okay} {Not really.}",
