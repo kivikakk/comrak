@@ -83,6 +83,45 @@ fn pathological_table_columns_2() {
     );
 }
 
+fn escaped_pipes_table(cell: &str) -> String {
+    format!(
+        "<table>\n<thead>\n<tr>\n<th>a</th>\n<th>b</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>{cell}</td>\n<td>x</td>\n</tr>\n</tbody>\n</table>\n"
+    )
+}
+
+#[test]
+#[timeout(4000)]
+fn pathological_table_escaped_pipes_cell() {
+    let n = 20_000;
+    let input = format!("a|b\n-|-\n{}|x\n", "\\|ä".repeat(n));
+    let exp = escaped_pipes_table(&"|ä".repeat(n));
+
+    html_opts!([extension.table], &input, &exp);
+}
+
+#[test]
+#[timeout(4000)]
+fn pathological_table_escaped_pipes_inlines() {
+    let n = 10_000;
+    let input = format!("a|b\n-|-\n{}|x\n", "*e*\\|".repeat(n));
+    let exp = escaped_pipes_table(&"<em>e</em>|".repeat(n));
+
+    html_opts!([extension.table], &input, &exp);
+}
+
+#[test]
+#[timeout(4000)]
+fn pathological_table_escaped_pipes_paragraph() {
+    let n = 10_000;
+    let input = format!("{}a|b\n-|-\n", "x\\|y\n".repeat(n));
+    let exp = format!(
+        "<p>{}</p>\n<table>\n<thead>\n<tr>\n<th>a</th>\n<th>b</th>\n</tr>\n</thead>\n</table>\n",
+        "x|y\n".repeat(n).trim_end()
+    );
+
+    html_opts!([extension.table], &input, &exp);
+}
+
 #[test]
 #[timeout(4000)]
 fn pathological_table_cell_alignment_html() {

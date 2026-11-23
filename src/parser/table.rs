@@ -421,10 +421,20 @@ fn escaped_pipe_positions(
     start_line: usize,
     offsets: &[usize],
 ) -> Vec<LineColumn> {
+    let mut scanned = 0;
+    let mut newlines = 0;
+    let mut since_newline = 0;
     escaped_pipes
         .iter()
         .map(|&index| {
-            let (newlines, since_newline) = count_newlines(&content[..index]);
+            let (more_newlines, since) = count_newlines(&content[scanned..index]);
+            if more_newlines > 0 {
+                newlines += more_newlines;
+                since_newline = since;
+            } else {
+                since_newline += since;
+            }
+            scanned = index;
             (start_line + newlines, offsets[newlines] + since_newline + 1).into()
         })
         .collect()
@@ -437,19 +447,29 @@ pub(crate) struct EscapedPipes<'a> {
 }
 
 impl<'a> EscapedPipes<'a> {
-    pub(crate) fn restore(self, arena: &'a Arena<'a>) {
-        let restore_block_start = |position: LineColumn| {
-            let preceding = self
+    fn restore_block_start(&self, position: LineColumn) -> LineColumn {
+        let preceding = self
+            .positions
+            .partition_point(|escaped| *escaped < position)
+            - self
                 .positions
-                .iter()
-                .filter(|escaped| escaped.line == position.line && escaped.column < position.column)
-                .count();
-            position.column_add(preceding as isize)
-        };
-        let restore = |position: LineColumn| {
-            let at_pipe = self.positions.contains(&position);
-            restore_block_start(position).column_add(at_pipe as isize)
-        };
+                .partition_point(|escaped| escaped.line < position.line);
+        position.column_add(preceding as isize)
+    }
+
+    fn restore_position(&self, position: LineColumn) -> LineColumn {
+        let at_pipe = self.positions.binary_search(&position).is_ok();
+        self.restore_block_start(position)
+            .column_add(at_pipe as isize)
+    }
+
+    fn after_through(&self, start: LineColumn, last: LineColumn) -> &[LineColumn] {
+        let after = &self.positions[self.positions.partition_point(|escaped| *escaped <= start)..];
+        &after[..after.partition_point(|escaped| *escaped <= last)]
+    }
+
+    pub(crate) fn restore(self, arena: &'a Arena<'a>) {
+        debug_assert!(self.positions.is_sorted());
 
         let nodes: Vec<_> = self
             .block
@@ -466,26 +486,22 @@ impl<'a> EscapedPipes<'a> {
                 && start.line == last.line
                 && text.len() == last.column - start.column + 1
             {
-                for escaped in self.positions.iter().rev().filter(|escaped| {
-                    escaped.line == start.line
-                        && start.column < escaped.column
-                        && escaped.column <= last.column
-                }) {
+                for escaped in self.after_through(start, last).iter().rev() {
                     let tail = text.to_mut().split_off(escaped.column - start.column);
                     node.insert_after(make_inline(
                         arena,
                         NodeValue::Text(tail.into()),
-                        (restore(*escaped), restore(end)).into(),
+                        (self.restore_position(*escaped), self.restore_position(end)).into(),
                     ));
                     end = escaped.column_add(-1);
                 }
             }
             let restored_start = if ast.value.block() {
-                restore_block_start(start)
+                self.restore_block_start(start)
             } else {
-                restore(start)
+                self.restore_position(start)
             };
-            ast.sourcepos = (restored_start, restore(end)).into();
+            ast.sourcepos = (restored_start, self.restore_position(end)).into();
         }
     }
 }
