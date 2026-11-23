@@ -273,6 +273,29 @@ fn is_utf8_continuation(b: u8) -> bool {
     b & 0xc0 == 0x80
 }
 
+fn alert_after_run(
+    line: &str,
+    mut pos: usize,
+    content_column: usize,
+) -> Option<(AlertType, usize)> {
+    let bytes = line.as_bytes();
+    let mut column = content_column;
+    loop {
+        match bytes.get(pos) {
+            Some(b' ') => column += 1,
+            Some(b'\t') => column += TAB_STOP - column % TAB_STOP,
+            _ => break,
+        }
+        pos += 1;
+    }
+    if column - content_column > CODE_INDENT {
+        return None;
+    }
+
+    let (alert_type, len) = scanners::alert_type(&line[pos..])?;
+    Some((alert_type, pos + len))
+}
+
 fn fenced_container_fits(container: Node<'_>) -> bool {
     container
         .ancestors()
@@ -305,6 +328,8 @@ pub struct Parser<'a: 'd, 'o, 'c, 'd> {
     offset: usize,
     column: usize,
     thematic_break_kill_pos: usize,
+    alert_run_end: usize,
+    alert_run: Option<(AlertType, usize)>,
     first_nonspace: usize,
     first_nonspace_column: usize,
     indent: usize,
@@ -385,6 +410,8 @@ where
             offset: 0,
             column: 0,
             thematic_break_kill_pos: 0,
+            alert_run_end: 0,
+            alert_run: None,
             first_nonspace: 0,
             first_nonspace_column: 0,
             indent: 0,
@@ -539,6 +566,7 @@ where
         self.first_nonspace_column = 0;
         self.indent = 0;
         self.thematic_break_kill_pos = 0;
+        self.alert_run_end = 0;
         self.blank = false;
         self.partially_consumed_tab = false;
     }
@@ -1196,37 +1224,34 @@ where
         true
     }
 
-    fn detect_alert(&self, line: &str) -> Option<(AlertType, usize, usize)> {
+    fn detect_alert(&mut self, line: &str) -> Option<(AlertType, usize, usize)> {
         if !self.options.extension.alerts {
             return None;
         }
 
-        let bytes = line.as_bytes();
-        let mut pos = self.first_nonspace;
-        while bytes.get(pos) == Some(&b'>') {
-            pos += 1;
-        }
-        let fence_length = pos - self.first_nonspace;
-        if fence_length == 0 {
-            return None;
-        }
-
-        let content_column = self.first_nonspace_column + fence_length;
-        let mut column = content_column;
-        loop {
-            match bytes.get(pos) {
-                Some(b' ') => column += 1,
-                Some(b'\t') => column += TAB_STOP - column % TAB_STOP,
-                _ => break,
+        if self.first_nonspace >= self.alert_run_end {
+            let bytes = line.as_bytes();
+            let mut pos = self.first_nonspace;
+            while bytes.get(pos) == Some(&b'>') {
+                pos += 1;
             }
-            pos += 1;
-        }
-        if column - content_column > CODE_INDENT {
-            return None;
+            if pos == self.first_nonspace {
+                return None;
+            }
+            self.alert_run_end = pos;
+            self.alert_run = alert_after_run(
+                line,
+                pos,
+                self.first_nonspace_column + pos - self.first_nonspace,
+            );
         }
 
-        let (alert_type, len) = scanners::alert_type(&line[pos..])?;
-        Some((alert_type, fence_length, pos + len))
+        let (alert_type, title_startpos) = self.alert_run?;
+        Some((
+            alert_type,
+            self.alert_run_end - self.first_nonspace,
+            title_startpos,
+        ))
     }
 
     fn handle_multiline_blockquote(&mut self, container: &mut Node<'a>, line: &str) -> bool {

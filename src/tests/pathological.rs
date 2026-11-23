@@ -510,6 +510,20 @@ fn pathological_multiline_alert_nesting() {
 
 #[test]
 #[timeout(4000)]
+fn pathological_alert_marker_run() {
+    let n = 50_000;
+    let input = format!("{}\n", ">".repeat(n));
+    let exp = format!(
+        "{}{}",
+        "<blockquote>\n".repeat(n),
+        "</blockquote>\n".repeat(n)
+    );
+
+    html_opts!([extension.alerts], &input, &exp);
+}
+
+#[test]
+#[timeout(4000)]
 fn pathological_header_ids() {
     let n = 20_000;
     let input = "# a\n".repeat(n);
