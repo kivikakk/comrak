@@ -619,6 +619,35 @@ fn pathological_skip_char_flanking_variation_selector() {
 
 #[test]
 #[timeout(4000)]
+fn pathological_list_nesting_blank_lines() {
+    let k = 20;
+    let input = (0..k)
+        .map(|i| format!("{}{}a\n", " ".repeat(200 * i), "- ".repeat(100)))
+        .collect::<String>()
+        + &"\n".repeat(100 * k * k);
+
+    let html = markdown_to_html(&input, &Options::default());
+    assert_eq!(html.matches("<li>").count(), 50);
+}
+
+#[test]
+#[timeout(4000)]
+fn pathological_footnote_nesting_blank_lines() {
+    let k = 20;
+    let input = "x[^a]\n\n".to_string()
+        + &(0..k)
+            .map(|i| format!("{}{}x\n", " ".repeat(396 * i), "[^a]: ".repeat(99)))
+            .collect::<String>()
+        + &"\n".repeat(400 * k * k);
+
+    let mut options = Options::default();
+    options.extension.footnotes = true;
+    let html = markdown_to_html(&input, &options);
+    assert_eq!(html.matches("<li id=\"fn-a\">").count(), 1);
+}
+
+#[test]
+#[timeout(4000)]
 fn pathological_header_ids() {
     let n = 20_000;
     let input = "# a\n".repeat(n);

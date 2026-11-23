@@ -46,11 +46,11 @@ pub(crate) const TAB_STOP: usize = 4;
 const CODE_INDENT: usize = 4;
 
 // Very deeply nested lists can cause quadratic performance issues.
-// This constant is used in open_new_blocks() to limit the nesting
-// depth. It is unlikely that a non-contrived markdown document will
+// This limits the ancestor count for lists, footnote definitions,
+// description items, and fenced containers.
+// It is unlikely that a non-contrived markdown document will
 // be nested this deeply.
-const MAX_LIST_DEPTH: usize = 100;
-const MAX_FENCED_CONTAINER_DEPTH: usize = 100;
+const MAX_NESTING_DEPTH: usize = 100;
 
 const MAX_REF_SIZE_FLOOR: usize = 100_000;
 
@@ -304,11 +304,8 @@ fn alert_after_run(
     Some((alert_type, pos + len))
 }
 
-fn fenced_container_fits(container: Node<'_>) -> bool {
-    container
-        .ancestors()
-        .nth(MAX_FENCED_CONTAINER_DEPTH)
-        .is_none()
+fn nesting_fits(container: Node<'_>) -> bool {
+    container.ancestors().nth(MAX_NESTING_DEPTH).is_none()
 }
 
 /// Return whether the byte at the given offset passes the callback.
@@ -1014,7 +1011,6 @@ where
     ) {
         let mut maybe_lazy =
             node_matches!(self.current, NodeValue::Paragraph) || allow_lazy_callout;
-        let mut depth = 0;
 
         while !node_matches!(
             container,
@@ -1044,7 +1040,6 @@ where
             if self.cancellation.step() {
                 break;
             }
-            depth += 1;
             self.find_first_nonspace(line);
             let indented = self.indent >= CODE_INDENT;
 
@@ -1065,9 +1060,9 @@ where
                     || self.handle_html_block(container, line)
                     || self.handle_setext_heading(container, line)
                     || self.handle_thematic_break(container, line, all_matched)
-                    || self.handle_footnote(container, line, depth)
+                    || self.handle_footnote(container, line)
                     || self.handle_description_list(container, line)))
-                || self.handle_list(container, line, indented, depth)
+                || self.handle_list(container, line, indented)
                 || self.handle_code_block(container, line, indented, maybe_lazy)
                 || self.handle_grid_table(container, line, indented, maybe_lazy)
                 || self.handle_table(container, line, indented))
@@ -1087,7 +1082,7 @@ where
         let Some(matched) = self.detect_block_directive(line) else {
             return false;
         };
-        if !fenced_container_fits(container) {
+        if !nesting_fits(container) {
             return false;
         }
 
@@ -1201,8 +1196,7 @@ where
 
         if fence_length == 2
             || (fence_length >= 3
-                && (!self.options.extension.multiline_block_quotes
-                    || !fenced_container_fits(container)))
+                && (!self.options.extension.multiline_block_quotes || !nesting_fits(container)))
         {
             return false;
         }
@@ -1247,7 +1241,7 @@ where
         let Some(matched) = self.detect_multiline_blockquote(line) else {
             return false;
         };
-        if !fenced_container_fits(container) {
+        if !nesting_fits(container) {
             return false;
         }
 
@@ -1885,8 +1879,8 @@ where
         }
     }
 
-    fn handle_footnote(&mut self, container: &mut Node<'a>, line: &str, depth: usize) -> bool {
-        let Some(matched) = self.detect_footnote(line, depth) else {
+    fn handle_footnote(&mut self, container: &mut Node<'a>, line: &str) -> bool {
+        let Some(matched) = self.detect_footnote(container, line) else {
             return false;
         };
 
@@ -1906,9 +1900,10 @@ where
         true
     }
 
-    fn detect_footnote(&self, line: &str, depth: usize) -> Option<usize> {
-        if self.options.extension.footnotes && depth < MAX_LIST_DEPTH {
+    fn detect_footnote(&self, container: Node<'a>, line: &str) -> Option<usize> {
+        if self.options.extension.footnotes {
             scanners::footnote_definition(&line[self.first_nonspace..])
+                .filter(|_| nesting_fits(container))
         } else {
             None
         }
@@ -1921,6 +1916,7 @@ where
             || !bytes
                 .get(self.first_nonspace + 1)
                 .is_none_or(|&b| strings::is_space_or_tab(b) || strings::is_line_end_char(b))
+            || !nesting_fits(container)
         {
             return false;
         }
@@ -2045,14 +2041,8 @@ where
         }
     }
 
-    fn handle_list(
-        &mut self,
-        container: &mut Node<'a>,
-        line: &str,
-        indented: bool,
-        depth: usize,
-    ) -> bool {
-        let Some((matched, mut nl)) = self.detect_list(container, line, indented, depth) else {
+    fn handle_list(&mut self, container: &mut Node<'a>, line: &str, indented: bool) -> bool {
+        let Some((matched, mut nl)) = self.detect_list(container, line, indented) else {
             return false;
         };
 
@@ -2107,17 +2097,14 @@ where
         container: Node<'a>,
         line: &str,
         indented: bool,
-        depth: usize,
     ) -> Option<(usize, NodeList)> {
-        if (!indented || node_matches!(container, NodeValue::List(..)))
-            && self.indent < 4
-            && depth < MAX_LIST_DEPTH
-        {
+        if (!indented || node_matches!(container, NodeValue::List(..))) && self.indent < 4 {
             parse_list_marker(
                 line,
                 self.first_nonspace,
                 node_matches!(container, NodeValue::Paragraph),
             )
+            .filter(|_| nesting_fits(container))
         } else {
             None
         }
