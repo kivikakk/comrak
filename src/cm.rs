@@ -1766,6 +1766,8 @@ fn table_escape(node: Node<'_>, c: char) -> bool {
     }
 }
 
+const MINIMIZE_BUDGET: usize = 1 << 22;
+
 fn minimize_commonmark(text: &mut String, original_options: &Options) {
     let mut options_without = original_options.clone();
     options_without.render.experimental_minimize_commonmark = false;
@@ -1776,6 +1778,9 @@ fn minimize_commonmark(text: &mut String, original_options: &Options) {
         .enumerate()
         .filter_map(|(ix, &c)| if c == b'\\' { Some(ix) } else { None })
         .collect();
+    if ixs.len().saturating_mul(text.len()) > MINIMIZE_BUDGET {
+        return;
+    }
     let original = text.clone();
 
     let mut adjust = 0;

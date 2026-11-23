@@ -569,6 +569,24 @@ fn pathological_heex_unclosed_directive_paragraph() {
 
 #[test]
 #[timeout(4000)]
+fn pathological_minimize_commonmark() {
+    let n = 20_000;
+    let input = "a[".repeat(n);
+
+    let arena = Arena::new();
+    let mut options = Options::default();
+    let root = parse_document(&arena, &input, &options);
+    let mut unminimized = String::new();
+    cm::format_document(root, &options, &mut unminimized).unwrap();
+
+    options.render.experimental_minimize_commonmark = true;
+    let mut minimized = String::new();
+    cm::format_document(root, &options, &mut minimized).unwrap();
+    assert_eq!(minimized, unminimized);
+}
+
+#[test]
+#[timeout(4000)]
 fn pathological_header_ids() {
     let n = 20_000;
     let input = "# a\n".repeat(n);
