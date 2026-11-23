@@ -1,3 +1,20 @@
+# [v1.2.0] - 2026-11-23
+
+## What's Changed
+* math: fish. by @kivikakk in https://github.com/kivikakk/comrak/pull/941
+* gfm: fish. by @kivikakk in https://github.com/kivikakk/comrak/pull/942
+* sourcepos: document. by @kivikakk in https://github.com/kivikakk/comrak/pull/943
+* header IDs: fish. by @kivikakk in https://github.com/kivikakk/comrak/pull/944
+* description lists: fish. by @kivikakk in https://github.com/kivikakk/comrak/pull/945
+* sub/superscript: fish. by @kivikakk in https://github.com/kivikakk/comrak/pull/946
+* quadratic bonanza! by @kivikakk in https://github.com/kivikakk/comrak/pull/948
+* attributes: memoise rejected inline attr openers. by @kivikakk in https://github.com/kivikakk/comrak/pull/949
+
+
+**Full Changelog**: https://github.com/kivikakk/comrak/compare/v1.1.0...v1.2.0
+
+---snip---
+
 <!--
 
 Categories to use in this document, and the order in which to give them:
