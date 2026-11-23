@@ -491,6 +491,43 @@ fn pathological_grid_table_cells() {
 #[cfg(feature = "grid_table")]
 #[test]
 #[timeout(4000)]
+fn pathological_grid_table_commonmark_reference_area() {
+    let n = 8_000;
+    let input = format!(
+        "+-----+\n| [r] |\n+-----+\n\n[r]: /{} \"{}\"\n",
+        "u".repeat(n),
+        "x\n".repeat(n)
+    );
+
+    let arena = Arena::new();
+    let options = grid_table_options();
+    let root = parse_document(&arena, &input, &options);
+    let mut output = String::new();
+    assert!(cm::format_document(root, &options, &mut output).is_err());
+}
+
+#[cfg(feature = "grid_table")]
+#[test]
+fn grid_table_commonmark_sparse_within_area() {
+    let n = 2_000;
+    let header = "a".repeat(100);
+    let rule = format!("+{}+\n", "-".repeat(102));
+    let input = format!(
+        "{rule}| {header} |\n{}",
+        format!("{rule}| {:100} |\n", "b").repeat(n) + &rule
+    );
+
+    let arena = Arena::new();
+    let options = grid_table_options();
+    let root = parse_document(&arena, &input, &options);
+    let mut output = String::new();
+    cm::format_document(root, &options, &mut output).unwrap();
+    assert_eq!(output, input);
+}
+
+#[cfg(feature = "grid_table")]
+#[test]
+#[timeout(4000)]
 fn pathological_grid_table_tracing() {
     let n = 200;
     let separator = format!("+{}\n", "-+".repeat(n));

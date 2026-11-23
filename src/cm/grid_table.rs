@@ -7,6 +7,9 @@ use crate::node_matches;
 use crate::nodes::{GridTableSection, Node, NodeValue, TableAlignment};
 use crate::parser::TAB_STOP;
 
+const AREA_FACTOR: usize = 16;
+const AREA_SLACK: usize = 1 << 16;
+
 struct Rect {
     top: usize,
     left: usize,
@@ -39,6 +42,17 @@ fn offsets(sizes: &[usize]) -> Vec<usize> {
         offsets.push(offsets.last().unwrap() + size + 1);
     }
     offsets
+}
+
+fn area_budget(table: Node<'_>, cells: &[Rect]) -> usize {
+    let sourcepos = table.data().sourcepos;
+    let source = (sourcepos.end.line - sourcepos.start.line + 1) * sourcepos.end.column;
+    let content: usize = cells
+        .iter()
+        .flat_map(|cell| &cell.lines)
+        .map(String::len)
+        .sum();
+    AREA_FACTOR * (source + content) + AREA_SLACK
 }
 
 fn absorbs(node: Node<'_>) -> bool {
@@ -132,6 +146,9 @@ impl<'a> CommonMarkFormatter<'a, '_, '_, '_> {
         let ys = offsets(&heights);
         let width = xs.last().unwrap() + 1;
         let height = ys.last().unwrap() + 1;
+        if width.saturating_mul(height) > area_budget(table, &cells) {
+            return Err(fmt::Error);
+        }
         let mut canvas = vec![vec![Some(" ".to_string()); width]; height];
 
         for cell in &cells {
