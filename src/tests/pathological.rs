@@ -443,6 +443,32 @@ fn pathological_wikilinks_nested() {
     html_opts!([extension.wikilinks_title_after_pipe], &input, &exp);
 }
 
+#[cfg(feature = "attributes")]
+#[test]
+#[timeout(4000)]
+fn pathological_attribute_pairs() {
+    let n = 30_000;
+    let pairs: Vec<String> = (0..n).map(|i| format!("k{i}=v")).collect();
+    let input = format!("# h {{{}}}\n", pairs.join(" "));
+
+    html_opts!([extension.header_attributes], &input, "<h1>h</h1>\n");
+}
+
+#[cfg(feature = "attributes")]
+#[test]
+#[timeout(4000)]
+fn pathological_attribute_chain() {
+    let n = 30_000;
+    let chain: String = (0..n).map(|i| format!("{{k{i}=v}}")).collect();
+    let input = format!("[a](b){chain}\n");
+
+    html_opts!(
+        [extension.link_attributes],
+        &input,
+        "<p><a href=\"b\">a</a></p>\n"
+    );
+}
+
 #[test]
 #[timeout(4000)]
 fn pathological_header_ids() {

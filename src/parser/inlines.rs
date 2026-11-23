@@ -2421,13 +2421,9 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
 
     #[cfg(feature = "attributes")]
     fn handle_potential_attribute(&mut self, node: Node<'a>, parent_line_offsets: &[usize]) {
-        let Some((mut attrs, mut i)) = attributes::parse(&self.input[self.scanner.pos..]) else {
+        let Some((attrs, i)) = attributes::parse_chained(&self.input[self.scanner.pos..]) else {
             return;
         };
-        while let Some((more, j)) = attributes::parse(&self.input[self.scanner.pos + i..]) {
-            attributes::merge(&mut attrs, more);
-            i += j;
-        }
 
         let mut ast = node.data_mut();
         let (lines, last_line) = count_newlines(&self.input[self.scanner.pos..][..i]);
