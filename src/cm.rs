@@ -27,6 +27,8 @@ use crate::{node_matches, strings};
 #[cfg(feature = "grid_table")]
 mod grid_table;
 
+const LAZY_PREFIX_THRESHOLD: usize = 64;
+
 /// Formats an AST as CommonMark, modified by the given options.
 pub fn format_document(root: Node<'_>, options: &Options, output: &mut dyn Write) -> fmt::Result {
     // Formatting an ill-formed AST might lead to invalid output. However, we don't want to pay for
@@ -101,6 +103,8 @@ struct CommonMarkFormatter<'a, 'o, 'c, 'w> {
     grid_area: Rc<Cell<Option<usize>>>,
     custom_escape: Option<fn(Node<'a>, char) -> bool>,
     in_table: bool,
+    in_paragraph: bool,
+    lazy_line: bool,
     width: usize,
     footnote_ix: u32,
     ol_stack: Vec<usize>,
@@ -151,6 +155,8 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
             grid_area: Rc::default(),
             custom_escape: None,
             in_table: false,
+            in_paragraph: false,
+            lazy_line: false,
             width: options.render.width,
             footnote_ix: 0,
             ol_stack: vec![],
@@ -256,9 +262,14 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
 
         while let Some((mut i, c)) = it.next() {
             if self.begin_line {
-                self.write_prefix()?;
-                self.column = self.prefix.len();
+                if self.lazy_line {
+                    self.column = 0;
+                } else {
+                    self.write_prefix()?;
+                    self.column = self.prefix.len();
+                }
             }
+            self.lazy_line = false;
 
             if self.custom_escape.is_some_and(|f| f(self.node, c)) {
                 self.write("\\")?;
@@ -304,7 +315,9 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
                     .write_str(&self.wrap_buffer[..self.last_breakable])?;
                 self.output.write_str("\n")?;
                 strings::remove_from_start(&mut self.wrap_buffer, self.last_breakable + 1);
-                self.wrap_buffer.insert_str(0, &self.prefix);
+                if !self.lazy_prefix() {
+                    self.wrap_buffer.insert_str(0, &self.prefix);
+                }
                 self.column = self.wrap_buffer.len();
                 self.last_breakable = 0;
                 self.begin_line = false;
@@ -932,9 +945,14 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
     }
 
     fn format_paragraph(&mut self, entering: bool) {
+        self.in_paragraph = entering;
         if !entering {
             self.blankline();
         }
+    }
+
+    fn lazy_prefix(&self) -> bool {
+        self.in_paragraph && self.prefix.len() > LAZY_PREFIX_THRESHOLD
     }
 
     fn format_text(
@@ -1027,6 +1045,7 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
                 write!(self, "\\")?;
             }
             self.cr();
+            self.lazy_line = self.lazy_prefix();
         }
         Ok(())
     }
@@ -1035,8 +1054,10 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
         if entering {
             if !self.no_linebreaks && self.width == 0 && !self.options.render.hardbreaks {
                 self.cr();
+                self.lazy_line = self.lazy_prefix();
             } else if self.options.render.hardbreaks {
                 self.output("\n", true, Escaping::Literal)?;
+                self.lazy_line = self.lazy_prefix();
             } else {
                 self.output(" ", true, Escaping::Literal)?;
             }

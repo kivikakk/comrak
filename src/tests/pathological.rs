@@ -668,6 +668,24 @@ fn pathological_footnote_nesting_blank_lines() {
 
 #[test]
 #[timeout(4000)]
+fn pathological_commonmark_lazy_continuation() {
+    let n = 5_000;
+    let input = format!("{} a\n{}", ">".repeat(n), "b\n".repeat(n));
+
+    let arena = Arena::new();
+    let options = Options::default();
+    let root = parse_document(&arena, &input, &options);
+    let mut output = String::new();
+    cm::format_document(root, &options, &mut output).unwrap();
+    assert!(output.len() < 4 * input.len());
+    assert_eq!(
+        markdown_to_html(&output, &options),
+        markdown_to_html(&input, &options)
+    );
+}
+
+#[test]
+#[timeout(4000)]
 fn pathological_header_ids() {
     let n = 20_000;
     let input = "# a\n".repeat(n);
