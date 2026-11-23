@@ -538,6 +538,16 @@ fn pathological_inline_footnotes_unclosed() {
 
 #[test]
 #[timeout(4000)]
+fn pathological_latex_math_unclosed() {
+    let n = 60_000;
+    let input = "\\(".repeat(n);
+    let exp = format!("<p>{}</p>\n", "(".repeat(n));
+
+    html_opts!([extension.math_latex], &input, &exp);
+}
+
+#[test]
+#[timeout(4000)]
 fn pathological_header_ids() {
     let n = 20_000;
     let input = "# a\n".repeat(n);

@@ -138,6 +138,7 @@ pub struct Subject<'a: 'd, 'r, 'o, 'd, 'c, 'p> {
     pub(crate) relaxed_autolink_dead_zone_end: usize,
     pub(crate) autolink_extent: Range<usize>,
     bracket_closers: Option<FxHashMap<usize, usize>>,
+    latex_math_no_closer_from: [usize; 2],
 }
 
 #[derive(Default)]
@@ -187,6 +188,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             relaxed_autolink_dead_zone_end: 0,
             autolink_extent: 0..0,
             bracket_closers: None,
+            latex_math_no_closer_from: [usize::MAX; 2],
         }
     }
 
@@ -2208,14 +2210,25 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         }
     }
 
-    fn scan_to_closing_latex_math(&self, startpos: usize, closing_delimiter: u8) -> Option<usize> {
+    fn scan_to_closing_latex_math(
+        &mut self,
+        startpos: usize,
+        closing_delimiter: u8,
+    ) -> Option<usize> {
         let bytes = self.input.as_bytes();
         let input = bytes.get(startpos..)?;
         let matcher = backslash_matcher();
+        let leading_run_end = startpos + input.iter().take_while(|&&b| b == b'\\').count();
+        let no_closer_from =
+            &mut self.latex_math_no_closer_from[usize::from(closing_delimiter == b']')];
+        let known_absent = startpos >= *no_closer_from;
 
         let mut escaped_until = startpos;
         for index in matcher.iter(input) {
             let pos = startpos + index;
+            if known_absent && pos > leading_run_end {
+                return None;
+            }
             if pos < escaped_until {
                 continue;
             }
@@ -2225,6 +2238,9 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             escaped_until = pos + 2;
         }
 
+        if !known_absent {
+            *no_closer_from = leading_run_end;
+        }
         None
     }
 
