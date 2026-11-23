@@ -67,6 +67,12 @@ fn area_allowance(root: Node<'_>) -> usize {
     AREA_FACTOR * source + AREA_SLACK
 }
 
+fn direct_tight(table: Node<'_>) -> bool {
+    table.parent().is_some_and(|p| {
+        node_matches!(p, NodeValue::Item(..) | NodeValue::TaskItem(..)) && tight_container(p)
+    })
+}
+
 fn absorbs(node: Node<'_>) -> bool {
     let mut current = Some(node);
     while let Some(node) = current {
@@ -90,6 +96,30 @@ fn is(canvas: &[Vec<Option<String>>], y: usize, x: usize, s: &str) -> bool {
 }
 
 impl<'a> CommonMarkFormatter<'a, '_, '_, '_> {
+    fn format_grid_cells(&mut self, table: Node<'a>, cells: &[Rect]) -> fmt::Result {
+        let tight = self.in_tight_list_item;
+        let blank_before = table
+            .previous_sibling()
+            .is_some_and(|previous| !direct_tight(table) || absorbs(previous));
+        self.in_tight_list_item = !blank_before;
+        self.blankline();
+        for cell in cells {
+            self.blankline();
+            for line in &cell.lines {
+                if line.is_empty() {
+                    self.blankline();
+                } else {
+                    self.output(line, false, Escaping::Literal)?;
+                    self.in_tight_list_item = false;
+                    self.cr();
+                }
+            }
+        }
+        self.in_tight_list_item = tight;
+        self.blankline();
+        Ok(())
+    }
+
     pub(super) fn format_grid_table(&mut self, table: Node<'a>) -> fmt::Result {
         if self.grid_area.get().is_none() {
             self.grid_area.set(Some(area_allowance(self.root)));
@@ -170,7 +200,7 @@ impl<'a> CommonMarkFormatter<'a, '_, '_, '_> {
         let remaining = self.grid_area.get().unwrap();
         let area = width.saturating_mul(height);
         if area > remaining {
-            return Err(fmt::Error);
+            return self.format_grid_cells(table, &cells);
         }
         self.grid_area.set(Some(remaining - area));
         let mut canvas = vec![vec![Some(" ".to_string()); width]; height];
@@ -234,9 +264,7 @@ impl<'a> CommonMarkFormatter<'a, '_, '_, '_> {
             }
         }
 
-        let direct_tight = table.parent().is_some_and(|p| {
-            node_matches!(p, NodeValue::Item(..) | NodeValue::TaskItem(..)) && tight_container(p)
-        });
+        let direct_tight = direct_tight(table);
         let indent = match table.previous_sibling() {
             _ if !direct_tight => 0,
             Some(previous) if node_matches!(previous, NodeValue::GridTable(..)) => {

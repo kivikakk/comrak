@@ -740,11 +740,9 @@ fn pathological_grid_table_commonmark_reference_area() {
         "x\n".repeat(n)
     );
 
-    let arena = Arena::new();
-    let options = grid_table_options();
-    let root = parse_document(&arena, &input, &options);
-    let mut output = String::new();
-    assert!(cm::format_document(root, &options, &mut output).is_err());
+    let output = grid_table_commonmark(&input, &grid_table_options()).unwrap();
+    assert!(output.len() < 2 * input.len());
+    assert!(!output.contains("+-"));
 }
 
 #[cfg(feature = "grid_table")]
@@ -767,7 +765,8 @@ fn pathological_grid_table_commonmark_sibling_area() {
         "x\n".repeat(180)
     );
 
-    assert!(grid_table_commonmark(&input, &grid_table_options()).is_err());
+    let output = grid_table_commonmark(&input, &grid_table_options()).unwrap();
+    assert!(output.len() < 20 * input.len() + (1 << 16));
 }
 
 #[cfg(feature = "grid_table")]
@@ -811,7 +810,8 @@ fn pathological_grid_table_commonmark_nested_area() {
         );
     }
 
-    assert!(grid_table_commonmark(&input, &grid_table_options()).is_err());
+    let output = grid_table_commonmark(&input, &grid_table_options()).unwrap();
+    assert!(output.len() < 20 * input.len() + (1 << 16));
 }
 
 #[cfg(feature = "grid_table")]
