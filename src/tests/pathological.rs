@@ -308,6 +308,65 @@ fn pathological_relaxed_autolink_www_dead_zone() {
 
 #[test]
 #[timeout(4000)]
+fn pathological_autolink_www_failing_domains() {
+    let n = 20_000;
+    let input = "*www.".repeat(n);
+    let exp = format!("<p>{}</p>\n", input);
+
+    html_opts!([extension.autolink], &input, &exp);
+}
+
+#[test]
+#[timeout(4000)]
+fn pathological_autolink_url_failing_domains() {
+    let n = 20_000;
+    let input = "http://a_".repeat(n);
+    let exp = format!(
+        "<p>{}<a href=\"http://a\">http://a</a>_</p>\n",
+        "http://a_".repeat(n - 1)
+    );
+
+    html_opts!([extension.autolink], &input, &exp, no_roundtrip);
+}
+
+#[test]
+#[timeout(4000)]
+fn pathological_autolink_www_trailing_punctuation_unreached() {
+    let n = 20_000;
+    let input = "*www.a.b_*/".repeat(n);
+    let exp = format!("<p>{}</p>\n", "<em>www.a.b_</em>/".repeat(n));
+
+    html_opts!([extension.autolink], &input, &exp);
+}
+
+#[test]
+#[timeout(4000)]
+fn pathological_autolink_url_lt_separated() {
+    let n = 20_000;
+    let input = "http://a.com<".repeat(n);
+    let exp = format!(
+        "<p>{}</p>\n",
+        "<a href=\"http://a.com\">http://a.com</a>&lt;".repeat(n)
+    );
+
+    html_opts!([extension.autolink], &input, &exp);
+}
+
+#[test]
+#[timeout(4000)]
+fn pathological_relaxed_autolink_failing_domains() {
+    let n = 20_000;
+    let input = "a://_".repeat(n);
+    let exp = format!(
+        "<p>{}a://<em><a href=\"a://\">a://</a></em></p>\n",
+        "a://_".repeat(n - 2)
+    );
+
+    html_opts!([extension.autolink, parse.relaxed_autolinks], &input, &exp);
+}
+
+#[test]
+#[timeout(4000)]
 fn pathological_header_ids() {
     let n = 20_000;
     let input = "# a\n".repeat(n);

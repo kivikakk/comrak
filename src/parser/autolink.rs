@@ -279,24 +279,16 @@ pub fn www_match<'a>(
         return None;
     }
 
-    let mut link_end = 4;
-    while i + link_end < subject.input.len() && !isspace(bytes[i + link_end]) {
-        // basic test to detect whether we're in a normal markdown link - not exhaustive
-        if relaxed_autolinks && bytes[i + link_end - 1] == b']' && bytes[i + link_end] == b'(' {
-            subject.relaxed_autolink_dead_zone_end = i + link_end;
-            return None;
-        }
-        link_end += 1;
-    }
-
-    link_end = autolink_delim(&subject.input[i..], link_end, relaxed_autolinks);
-
-    if !valid_domain(
-        &subject.input[i + 4..i + link_end.max(4)],
-        relaxed_autolinks,
-    ) {
+    if !domain_delim_ok(&subject.input, i + 4, relaxed_autolinks, relaxed_autolinks) {
         return None;
     }
+
+    let link_end = autolink_extent(subject, i, 4)? - i;
+    let link_end = autolink_delim(&subject.input[i..], link_end, relaxed_autolinks);
+    debug_assert!(valid_domain(
+        host(&subject.input[i + 4..i + link_end.max(4)]),
+        relaxed_autolinks
+    ));
 
     let mut url = "http://".to_string();
     url.push_str(&subject.input[i..link_end + i]);
@@ -320,34 +312,116 @@ pub fn www_match<'a>(
 
 const MAX_DOMAIN_DOTS: usize = 10;
 
-fn valid_domain(data: &str, allow_short: bool) -> bool {
+fn host(data: &str) -> &str {
+    let len = data
+        .char_indices()
+        .find(|&(i, c)| {
+            !(c == '\\' && i + 1 < data.len()
+                || c == '_'
+                || c == '.'
+                || c == '-'
+                || is_valid_hostchar(c))
+        })
+        .map_or(data.len(), |(i, _)| i);
+    &data[..len]
+}
+
+fn valid_domain(host: &str, allow_short: bool) -> bool {
     let mut dots = 0;
     let mut uscores = 0;
     let mut prev_uscores = 0;
 
-    for (i, c) in data.char_indices() {
+    for c in host.bytes() {
         match c {
-            '\\' if i + 1 < data.len() => {}
-            '_' => uscores += 1,
-            '.' => {
+            b'_' => uscores += 1,
+            b'.' => {
                 prev_uscores = uscores;
                 uscores = 0;
                 dots += 1;
             }
-            c if is_valid_hostchar(c) || c == '-' => {}
-            _ => break,
+            _ => {}
         }
     }
 
     dots > MAX_DOMAIN_DOTS || (uscores == 0 && prev_uscores == 0 && (allow_short || dots > 0))
 }
 
+fn domain_delim_ok(
+    input: &str,
+    start: usize,
+    allow_short: bool,
+    relaxed_autolinks: bool,
+) -> bool {
+    let host = host(&input[start..]);
+    let valid = valid_domain(host, allow_short);
+    let stripped = host.trim_end_matches(['.', '_']);
+    if stripped.len() == host.len() {
+        return valid;
+    }
+
+    let stripped_valid = valid_domain(stripped, allow_short);
+    if valid != stripped_valid
+        && delim_reaches(input.as_bytes(), start + host.len(), relaxed_autolinks)
+    {
+        stripped_valid
+    } else {
+        valid
+    }
+}
+
+fn delim_reaches(bytes: &[u8], mut pos: usize, relaxed_autolinks: bool) -> bool {
+    loop {
+        let Some(&b) = bytes.get(pos) else {
+            return true;
+        };
+        match b {
+            b'<' => return true,
+            _ if isspace(b) => return true,
+            _ if LINK_END_ASSORTMENT[b as usize] || b == b';' || b == b')' => pos += 1,
+            b']' | b'}' if relaxed_autolinks => pos += 1,
+            b'&' => {
+                let name = bytes[pos + 1..].iter().take_while(|&&b| isalpha(b)).count();
+                if name == 0 || bytes.get(pos + 1 + name) != Some(&b';') {
+                    return false;
+                }
+                pos += name + 2;
+            }
+            _ => return false,
+        }
+    }
+}
+
+fn autolink_extent(
+    subject: &mut Subject<'_, '_, '_, '_, '_, '_>,
+    i: usize,
+    skip: usize,
+) -> Option<usize> {
+    if subject.autolink_extent.contains(&i) {
+        return Some(subject.autolink_extent.end);
+    }
+
+    let bytes = subject.input.as_bytes();
+    let mut end = i + skip;
+    while end < bytes.len() && !isspace(bytes[end]) {
+        // basic test to detect whether we're in a normal markdown link - not exhaustive
+        if subject.options.parse.relaxed_autolinks && bytes[end - 1] == b']' && bytes[end] == b'(' {
+            subject.relaxed_autolink_dead_zone_end = end;
+            return None;
+        }
+        end += 1;
+    }
+
+    subject.autolink_extent = i..end;
+    Some(end)
+}
+
 fn is_valid_hostchar(ch: char) -> bool {
     !(ch.is_whitespace() || ch.is_punctuation() || ch.is_symbol())
 }
 
+const LINK_END_ASSORTMENT: [bool; 256] = character_set!(b"?!.,:*_~'\"");
+
 fn autolink_delim(data: &str, mut link_end: usize, relaxed_autolinks: bool) -> usize {
-    const LINK_END_ASSORTMENT: [bool; 256] = character_set!(b"?!.,:*_~'\"");
     // \u{2069} (Pop Directional Isolate)
     const LINK_END_UNICODE: [u8; 3] = [0xe2, 0x81, 0xa9];
 
@@ -463,25 +537,16 @@ pub fn url_match<'a>(
         }
     }
 
-    let mut link_end = 3;
-    while link_end < size - i && !isspace(bytes[i + link_end]) {
-        // basic test to detect whether we're in a normal markdown link - not exhaustive
-        if relaxed_autolinks
-            && link_end > 0
-            && bytes[i + link_end - 1] == b']'
-            && bytes[i + link_end] == b'('
-        {
-            subject.relaxed_autolink_dead_zone_end = i + link_end;
-            return None;
-        }
-        link_end += 1;
-    }
-
-    link_end = autolink_delim(&subject.input[i..], link_end, relaxed_autolinks);
-
-    if !valid_domain(&subject.input[i + 3..i + link_end.max(3)], true) {
+    if !domain_delim_ok(&subject.input, i + 3, true, relaxed_autolinks) {
         return None;
     }
+
+    let link_end = autolink_extent(subject, i, 3)? - i;
+    let link_end = autolink_delim(&subject.input[i..], link_end, relaxed_autolinks);
+    debug_assert!(valid_domain(
+        host(&subject.input[i + 3..i + link_end.max(3)]),
+        true
+    ));
 
     let url = &subject.input[i - rewind..i + link_end];
     let inl = make_inline(
