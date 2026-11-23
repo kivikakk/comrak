@@ -217,7 +217,7 @@ impl<'o, 'c> XmlFormatter<'o, 'c> {
                 NodeValue::CodeBlock(ref ncb) => {
                     if !ncb.info.is_empty() {
                         self.output.write_str(" info=\"")?;
-                        self.output.write_str(&ncb.info)?;
+                        self.escape_attr(&ncb.info)?;
                         self.output.write_str("\"")?;
 
                         if ncb.is_math(self.options) {

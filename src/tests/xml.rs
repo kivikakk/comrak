@@ -35,6 +35,21 @@ fn base() {
 }
 
 #[test]
+fn code_block_info_escaped() {
+    xml(
+        "``` a\"b<c>&d\te\ncode\n```\n",
+        concat!(
+            "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n",
+            "<!DOCTYPE document SYSTEM \"CommonMark.dtd\">\n",
+            "<document xmlns=\"http://commonmark.org/xml/1.0\">\n",
+            "  <code_block info=\"a&quot;b&lt;c&gt;&amp;d&#9;e\" xml:space=\"preserve\">code\n",
+            "</code_block>\n",
+            "</document>\n",
+        ),
+    );
+}
+
+#[test]
 fn sourcepos() {
     let input = concat!(
         "foo *bar*\n",
