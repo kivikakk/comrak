@@ -1942,6 +1942,8 @@ fn tight_container(node: Node<'_>) -> bool {
     match node.data().value {
         NodeValue::List(ref nl) => nl.tight,
         NodeValue::Item(..) | NodeValue::TaskItem(..) => node.parent().is_some_and(tight_container),
+        NodeValue::DescriptionItem(ref ndi) => ndi.tight,
+        NodeValue::DescriptionDetails => node.parent().is_some_and(tight_container),
         _ => false,
     }
 }

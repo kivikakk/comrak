@@ -472,3 +472,24 @@ fn commonmark_code_block_after_details_is_fenced() {
         "<dl>\n<dt>a</dt>\n<dd>b</dd>\n</dl>\n<pre><code>- c\n</code></pre>\n"
     );
 }
+
+#[test]
+fn commonmark_tight_details_keep_blocks_together() {
+    let mut options = Options::default();
+    options.extension.description_lists = true;
+    commonmark(
+        "a\n: b\n  > c\n  d\n",
+        "a\n: b\n  > c\n  > d\n",
+        Some(&options),
+    );
+    html_opts!(
+        [extension.description_lists],
+        "a\n: b\n  > c\n  d\n",
+        "<dl>\n<dt>a</dt>\n<dd>b\n<blockquote>\n<p>c\nd</p>\n</blockquote>\n</dd>\n</dl>\n"
+    );
+    html_opts!(
+        [extension.description_lists],
+        "a\n: b\n\n  > c\n",
+        "<dl>\n<dt>a</dt>\n<dd>\n<p>b</p>\n<blockquote>\n<p>c</p>\n</blockquote>\n</dd>\n</dl>\n"
+    );
+}
