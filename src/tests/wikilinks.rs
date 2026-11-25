@@ -60,6 +60,31 @@ fn wikilinks_title_escape_chars() {
 }
 
 #[test]
+fn wikilinks_keep_escaped_with_parse_option() {
+    let mut options = Options::default();
+    options.extension.wikilinks_title_after_pipe = true;
+    options.parse.escaped_char_spans = true;
+    let arena = Arena::new();
+    let root = parse_document(&arena, "[[a\\|b]]", &options);
+    let kinds: Vec<_> = root
+        .descendants()
+        .map(|n| n.data().value.xml_node_name())
+        .collect();
+    assert_eq!(
+        kinds,
+        [
+            "document",
+            "paragraph",
+            "wikilink",
+            "text",
+            "escaped",
+            "text",
+            "text"
+        ]
+    );
+}
+
+#[test]
 fn wikilinks_supersedes_relaxed_autolinks() {
     html_opts!(
         [

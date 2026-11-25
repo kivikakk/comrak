@@ -3048,8 +3048,7 @@ where
     fn postprocess_text_nodes(&mut self, root: Node<'a>) {
         let mut stack = vec![(root, false)];
         let mut children = vec![];
-        let coalesce_escaped =
-            !(self.options.parse.escaped_char_spans || self.options.render.escaped_char_spans);
+        let coalesce_escaped = !self.options.keeps_escaped();
 
         while let Some((parent, in_bracket_context)) = stack.pop() {
             if self.cancellation.step() {

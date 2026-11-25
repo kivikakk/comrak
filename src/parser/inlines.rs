@@ -1207,7 +1207,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                 let escaped = self.input[offset + 1..offset + 2].to_string();
                 let text = make_inline(self.arena, NodeValue::Text(escaped.into()), span);
 
-                if self.options.render.escaped_char_spans {
+                if self.options.keeps_escaped() {
                     let escaped_span = make_inline(self.arena, NodeValue::Escaped, span);
                     escaped_span.append(text);
                     container.append(escaped_span);
