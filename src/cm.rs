@@ -859,21 +859,27 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
                 self.write_str(&content)?;
             }
         } else {
+            let keeps_default_off = !ncb.fenced
+                && info.is_empty()
+                && self.options.parse.default_info().is_some()
+                && !self.options.render.prefer_fenced
+                && !(self.fenced_code_attributes() && has_attributes(node));
             #[allow(clippy::len_zero)]
-            if !(info.len() > 0
-                || literal.len() <= 2
-                || isspace(literal[0])
-                || first_in_list_item
-                || node.previous_sibling().is_some_and(|previous| {
-                    self.in_tight_list_item
-                        || node_matches!(
-                            previous,
-                            NodeValue::CodeBlock(..) | NodeValue::DescriptionList
-                        )
-                })
-                || self.options.render.prefer_fenced
-                || self.fenced_code_attributes() && has_attributes(node)
-                || isspace(literal[literal.len() - 1]) && isspace(literal[literal.len() - 2]))
+            if keeps_default_off
+                || !(info.len() > 0
+                    || literal.len() <= 2
+                    || isspace(literal[0])
+                    || first_in_list_item
+                    || node.previous_sibling().is_some_and(|previous| {
+                        self.in_tight_list_item
+                            || node_matches!(
+                                previous,
+                                NodeValue::CodeBlock(..) | NodeValue::DescriptionList
+                            )
+                    })
+                    || self.options.render.prefer_fenced
+                    || self.fenced_code_attributes() && has_attributes(node)
+                    || isspace(literal[literal.len() - 1]) && isspace(literal[literal.len() - 2]))
             {
                 write!(self, "    ")?;
                 write!(self.prefix, "    ")?;
