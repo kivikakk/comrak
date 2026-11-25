@@ -53,47 +53,46 @@ pub fn clean_autolink(mut url: &str, kind: AutolinkType) -> Cow<'_, str> {
     }
 }
 
+/// Applies whitespace rules to code matched in backtick delimiters:
+/// - Newlines are replaced with whitespace
+/// - One space at the beginning and end are removed when both are present
+///   and the text contains non-space characters
 pub fn normalize_code(v: &str) -> Cow<'_, str> {
-    let b = v.as_bytes();
-    let mut r = String::new();
-    let mut offset = 0;
-    let mut i = 0;
+    let mut starts_with_space = false;
+    let mut ends_with_space = false;
     let mut contains_nonspace = false;
+    let mut contains_newline = false;
 
-    while i < b.len() {
-        match b[i] {
-            b'\n' => {
-                r.push_str(&v[offset..i]);
-                r.push(' ');
-                offset = i + 1;
-            }
+    for (idx, c) in v.bytes().enumerate() {
+        let is_space = c == b' ' || c == b'\n';
+
+        if idx == 0 {
+            starts_with_space = is_space;
+        }
+        if idx + 1 == v.len() {
+            ends_with_space = is_space;
+        }
+
+        match c {
+            b'\n' => contains_newline = true,
             b' ' => {}
             _ => contains_nonspace = true,
-        }
-
-        i += 1
+        };
     }
 
-    if offset == 0 {
-        if contains_nonspace && b[0] == b' ' && b[i - 1] == b' ' {
-            return v[1..i - 1].into();
-        } else {
-            return v.into();
-        }
+    let trimmed = if contains_nonspace && starts_with_space && ends_with_space {
+        &v[1..v.len() - 1]
+    } else {
+        v
+    };
+
+    if contains_newline {
+        // This might end up doing extra work if newlines were only seen at the
+        // start or end of the code fence. ¯\_(ツ)_/¯
+        trimmed.replace('\n', " ").into()
+    } else {
+        trimmed.into()
     }
-
-    r.push_str(&v[offset..i]);
-
-    // SAFETY: we only shift over a space, and we are guaranteed to duplicate a
-    // space in the last byte of the buffer before truncating.
-    let bytes = unsafe { r.as_bytes_mut() };
-    let len = bytes.len();
-    if contains_nonspace && bytes[0] == b' ' && bytes[len - 1] == b' ' {
-        shift_buf_left(bytes, 1);
-        r.truncate(len - 2);
-    }
-
-    r.into()
 }
 
 pub fn remove_trailing_blank_lines(line: &mut String) {
