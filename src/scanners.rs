@@ -17684,6 +17684,1246 @@ pub fn tasklist(s: &str) -> Option<(usize, &str, std::ops::Range<usize>)> {
     }
 }
 
+pub enum EntityType {
+    Named,
+    Decimal,
+    Hexadecimal,
+}
+
+pub fn entity(s: &str) -> Option<(EntityType, usize, &str)> {
+    let mut cursor = 0;
+    let mut marker = 0;
+    let len = s.len();
+
+    {
+        #[allow(unused_assignments)]
+        let mut yych: u8 = 0;
+        let mut yystate: usize = 0;
+        'yyl: loop {
+            match yystate {
+                0 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.as_bytes().get_unchecked(cursor)
+                        } else {
+                            255
+                        }
+                    };
+                    cursor += 1;
+                    match yych {
+                        0x26 => {
+                            yystate = 3;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 1;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                1 => {
+                    yystate = 2;
+                    continue 'yyl;
+                }
+                2 => {
+                    return None;
+                }
+                3 => {
+                    marker = cursor;
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.as_bytes().get_unchecked(cursor)
+                        } else {
+                            255
+                        }
+                    };
+                    match yych {
+                        0x23 => {
+                            cursor += 1;
+                            yystate = 4;
+                            continue 'yyl;
+                        }
+                        0x30..=0x39 | 0x41..=0x5A | 0x61..=0x7A => {
+                            cursor += 1;
+                            yystate = 6;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 2;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                4 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.as_bytes().get_unchecked(cursor)
+                        } else {
+                            255
+                        }
+                    };
+                    match yych {
+                        0x30..=0x39 => {
+                            cursor += 1;
+                            yystate = 7;
+                            continue 'yyl;
+                        }
+                        0x58 | 0x78 => {
+                            cursor += 1;
+                            yystate = 8;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                5 => {
+                    cursor = marker;
+                    yystate = 2;
+                    continue 'yyl;
+                }
+                6 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.as_bytes().get_unchecked(cursor)
+                        } else {
+                            255
+                        }
+                    };
+                    match yych {
+                        0x30..=0x39 | 0x41..=0x5A | 0x61..=0x7A => {
+                            cursor += 1;
+                            yystate = 9;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                7 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.as_bytes().get_unchecked(cursor)
+                        } else {
+                            255
+                        }
+                    };
+                    match yych {
+                        0x30..=0x39 => {
+                            cursor += 1;
+                            yystate = 10;
+                            continue 'yyl;
+                        }
+                        0x3B => {
+                            cursor += 1;
+                            yystate = 11;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                8 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.as_bytes().get_unchecked(cursor)
+                        } else {
+                            255
+                        }
+                    };
+                    match yych {
+                        0x30..=0x39 | 0x41..=0x46 | 0x61..=0x66 => {
+                            cursor += 1;
+                            yystate = 12;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                9 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.as_bytes().get_unchecked(cursor)
+                        } else {
+                            255
+                        }
+                    };
+                    match yych {
+                        0x30..=0x39 | 0x41..=0x5A | 0x61..=0x7A => {
+                            cursor += 1;
+                            yystate = 13;
+                            continue 'yyl;
+                        }
+                        0x3B => {
+                            cursor += 1;
+                            yystate = 14;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                10 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.as_bytes().get_unchecked(cursor)
+                        } else {
+                            255
+                        }
+                    };
+                    match yych {
+                        0x30..=0x39 => {
+                            cursor += 1;
+                            yystate = 15;
+                            continue 'yyl;
+                        }
+                        0x3B => {
+                            cursor += 1;
+                            yystate = 11;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                11 => {
+                    return Some((EntityType::Decimal, cursor, &s[2..(cursor - 1)]));
+                }
+                12 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.as_bytes().get_unchecked(cursor)
+                        } else {
+                            255
+                        }
+                    };
+                    match yych {
+                        0x30..=0x39 | 0x41..=0x46 | 0x61..=0x66 => {
+                            cursor += 1;
+                            yystate = 16;
+                            continue 'yyl;
+                        }
+                        0x3B => {
+                            cursor += 1;
+                            yystate = 17;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                13 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.as_bytes().get_unchecked(cursor)
+                        } else {
+                            255
+                        }
+                    };
+                    match yych {
+                        0x30..=0x39 | 0x41..=0x5A | 0x61..=0x7A => {
+                            cursor += 1;
+                            yystate = 18;
+                            continue 'yyl;
+                        }
+                        0x3B => {
+                            cursor += 1;
+                            yystate = 14;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                14 => {
+                    return Some((EntityType::Named, cursor, &s[1..(cursor - 1)]));
+                }
+                15 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.as_bytes().get_unchecked(cursor)
+                        } else {
+                            255
+                        }
+                    };
+                    match yych {
+                        0x30..=0x39 => {
+                            cursor += 1;
+                            yystate = 19;
+                            continue 'yyl;
+                        }
+                        0x3B => {
+                            cursor += 1;
+                            yystate = 11;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                16 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.as_bytes().get_unchecked(cursor)
+                        } else {
+                            255
+                        }
+                    };
+                    match yych {
+                        0x30..=0x39 | 0x41..=0x46 | 0x61..=0x66 => {
+                            cursor += 1;
+                            yystate = 20;
+                            continue 'yyl;
+                        }
+                        0x3B => {
+                            cursor += 1;
+                            yystate = 17;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                17 => {
+                    return Some((EntityType::Hexadecimal, cursor, &s[3..(cursor - 1)]));
+                }
+                18 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.as_bytes().get_unchecked(cursor)
+                        } else {
+                            255
+                        }
+                    };
+                    match yych {
+                        0x30..=0x39 | 0x41..=0x5A | 0x61..=0x7A => {
+                            cursor += 1;
+                            yystate = 21;
+                            continue 'yyl;
+                        }
+                        0x3B => {
+                            cursor += 1;
+                            yystate = 14;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                19 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.as_bytes().get_unchecked(cursor)
+                        } else {
+                            255
+                        }
+                    };
+                    match yych {
+                        0x30..=0x39 => {
+                            cursor += 1;
+                            yystate = 22;
+                            continue 'yyl;
+                        }
+                        0x3B => {
+                            cursor += 1;
+                            yystate = 11;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                20 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.as_bytes().get_unchecked(cursor)
+                        } else {
+                            255
+                        }
+                    };
+                    match yych {
+                        0x30..=0x39 | 0x41..=0x46 | 0x61..=0x66 => {
+                            cursor += 1;
+                            yystate = 23;
+                            continue 'yyl;
+                        }
+                        0x3B => {
+                            cursor += 1;
+                            yystate = 17;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                21 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.as_bytes().get_unchecked(cursor)
+                        } else {
+                            255
+                        }
+                    };
+                    match yych {
+                        0x30..=0x39 | 0x41..=0x5A | 0x61..=0x7A => {
+                            cursor += 1;
+                            yystate = 24;
+                            continue 'yyl;
+                        }
+                        0x3B => {
+                            cursor += 1;
+                            yystate = 14;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                22 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.as_bytes().get_unchecked(cursor)
+                        } else {
+                            255
+                        }
+                    };
+                    match yych {
+                        0x30..=0x39 => {
+                            cursor += 1;
+                            yystate = 25;
+                            continue 'yyl;
+                        }
+                        0x3B => {
+                            cursor += 1;
+                            yystate = 11;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                23 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.as_bytes().get_unchecked(cursor)
+                        } else {
+                            255
+                        }
+                    };
+                    match yych {
+                        0x30..=0x39 | 0x41..=0x46 | 0x61..=0x66 => {
+                            cursor += 1;
+                            yystate = 26;
+                            continue 'yyl;
+                        }
+                        0x3B => {
+                            cursor += 1;
+                            yystate = 17;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                24 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.as_bytes().get_unchecked(cursor)
+                        } else {
+                            255
+                        }
+                    };
+                    match yych {
+                        0x30..=0x39 | 0x41..=0x5A | 0x61..=0x7A => {
+                            cursor += 1;
+                            yystate = 27;
+                            continue 'yyl;
+                        }
+                        0x3B => {
+                            cursor += 1;
+                            yystate = 14;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                25 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.as_bytes().get_unchecked(cursor)
+                        } else {
+                            255
+                        }
+                    };
+                    match yych {
+                        0x30..=0x39 => {
+                            cursor += 1;
+                            yystate = 28;
+                            continue 'yyl;
+                        }
+                        0x3B => {
+                            cursor += 1;
+                            yystate = 11;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                26 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.as_bytes().get_unchecked(cursor)
+                        } else {
+                            255
+                        }
+                    };
+                    match yych {
+                        0x30..=0x39 | 0x41..=0x46 | 0x61..=0x66 => {
+                            cursor += 1;
+                            yystate = 29;
+                            continue 'yyl;
+                        }
+                        0x3B => {
+                            cursor += 1;
+                            yystate = 17;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                27 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.as_bytes().get_unchecked(cursor)
+                        } else {
+                            255
+                        }
+                    };
+                    match yych {
+                        0x30..=0x39 | 0x41..=0x5A | 0x61..=0x7A => {
+                            cursor += 1;
+                            yystate = 30;
+                            continue 'yyl;
+                        }
+                        0x3B => {
+                            cursor += 1;
+                            yystate = 14;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                28 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.as_bytes().get_unchecked(cursor)
+                        } else {
+                            255
+                        }
+                    };
+                    match yych {
+                        0x3B => {
+                            cursor += 1;
+                            yystate = 11;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                29 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.as_bytes().get_unchecked(cursor)
+                        } else {
+                            255
+                        }
+                    };
+                    match yych {
+                        0x3B => {
+                            cursor += 1;
+                            yystate = 17;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                30 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.as_bytes().get_unchecked(cursor)
+                        } else {
+                            255
+                        }
+                    };
+                    match yych {
+                        0x30..=0x39 | 0x41..=0x5A | 0x61..=0x7A => {
+                            cursor += 1;
+                            yystate = 31;
+                            continue 'yyl;
+                        }
+                        0x3B => {
+                            cursor += 1;
+                            yystate = 14;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                31 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.as_bytes().get_unchecked(cursor)
+                        } else {
+                            255
+                        }
+                    };
+                    match yych {
+                        0x30..=0x39 | 0x41..=0x5A | 0x61..=0x7A => {
+                            cursor += 1;
+                            yystate = 32;
+                            continue 'yyl;
+                        }
+                        0x3B => {
+                            cursor += 1;
+                            yystate = 14;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                32 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.as_bytes().get_unchecked(cursor)
+                        } else {
+                            255
+                        }
+                    };
+                    match yych {
+                        0x30..=0x39 | 0x41..=0x5A | 0x61..=0x7A => {
+                            cursor += 1;
+                            yystate = 33;
+                            continue 'yyl;
+                        }
+                        0x3B => {
+                            cursor += 1;
+                            yystate = 14;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                33 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.as_bytes().get_unchecked(cursor)
+                        } else {
+                            255
+                        }
+                    };
+                    match yych {
+                        0x30..=0x39 | 0x41..=0x5A | 0x61..=0x7A => {
+                            cursor += 1;
+                            yystate = 34;
+                            continue 'yyl;
+                        }
+                        0x3B => {
+                            cursor += 1;
+                            yystate = 14;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                34 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.as_bytes().get_unchecked(cursor)
+                        } else {
+                            255
+                        }
+                    };
+                    match yych {
+                        0x30..=0x39 | 0x41..=0x5A | 0x61..=0x7A => {
+                            cursor += 1;
+                            yystate = 35;
+                            continue 'yyl;
+                        }
+                        0x3B => {
+                            cursor += 1;
+                            yystate = 14;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                35 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.as_bytes().get_unchecked(cursor)
+                        } else {
+                            255
+                        }
+                    };
+                    match yych {
+                        0x30..=0x39 | 0x41..=0x5A | 0x61..=0x7A => {
+                            cursor += 1;
+                            yystate = 36;
+                            continue 'yyl;
+                        }
+                        0x3B => {
+                            cursor += 1;
+                            yystate = 14;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                36 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.as_bytes().get_unchecked(cursor)
+                        } else {
+                            255
+                        }
+                    };
+                    match yych {
+                        0x30..=0x39 | 0x41..=0x5A | 0x61..=0x7A => {
+                            cursor += 1;
+                            yystate = 37;
+                            continue 'yyl;
+                        }
+                        0x3B => {
+                            cursor += 1;
+                            yystate = 14;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                37 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.as_bytes().get_unchecked(cursor)
+                        } else {
+                            255
+                        }
+                    };
+                    match yych {
+                        0x30..=0x39 | 0x41..=0x5A | 0x61..=0x7A => {
+                            cursor += 1;
+                            yystate = 38;
+                            continue 'yyl;
+                        }
+                        0x3B => {
+                            cursor += 1;
+                            yystate = 14;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                38 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.as_bytes().get_unchecked(cursor)
+                        } else {
+                            255
+                        }
+                    };
+                    match yych {
+                        0x30..=0x39 | 0x41..=0x5A | 0x61..=0x7A => {
+                            cursor += 1;
+                            yystate = 39;
+                            continue 'yyl;
+                        }
+                        0x3B => {
+                            cursor += 1;
+                            yystate = 14;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                39 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.as_bytes().get_unchecked(cursor)
+                        } else {
+                            255
+                        }
+                    };
+                    match yych {
+                        0x30..=0x39 | 0x41..=0x5A | 0x61..=0x7A => {
+                            cursor += 1;
+                            yystate = 40;
+                            continue 'yyl;
+                        }
+                        0x3B => {
+                            cursor += 1;
+                            yystate = 14;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                40 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.as_bytes().get_unchecked(cursor)
+                        } else {
+                            255
+                        }
+                    };
+                    match yych {
+                        0x30..=0x39 | 0x41..=0x5A | 0x61..=0x7A => {
+                            cursor += 1;
+                            yystate = 41;
+                            continue 'yyl;
+                        }
+                        0x3B => {
+                            cursor += 1;
+                            yystate = 14;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                41 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.as_bytes().get_unchecked(cursor)
+                        } else {
+                            255
+                        }
+                    };
+                    match yych {
+                        0x30..=0x39 | 0x41..=0x5A | 0x61..=0x7A => {
+                            cursor += 1;
+                            yystate = 42;
+                            continue 'yyl;
+                        }
+                        0x3B => {
+                            cursor += 1;
+                            yystate = 14;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                42 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.as_bytes().get_unchecked(cursor)
+                        } else {
+                            255
+                        }
+                    };
+                    match yych {
+                        0x30..=0x39 | 0x41..=0x5A | 0x61..=0x7A => {
+                            cursor += 1;
+                            yystate = 43;
+                            continue 'yyl;
+                        }
+                        0x3B => {
+                            cursor += 1;
+                            yystate = 14;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                43 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.as_bytes().get_unchecked(cursor)
+                        } else {
+                            255
+                        }
+                    };
+                    match yych {
+                        0x30..=0x39 | 0x41..=0x5A | 0x61..=0x7A => {
+                            cursor += 1;
+                            yystate = 44;
+                            continue 'yyl;
+                        }
+                        0x3B => {
+                            cursor += 1;
+                            yystate = 14;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                44 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.as_bytes().get_unchecked(cursor)
+                        } else {
+                            255
+                        }
+                    };
+                    match yych {
+                        0x30..=0x39 | 0x41..=0x5A | 0x61..=0x7A => {
+                            cursor += 1;
+                            yystate = 45;
+                            continue 'yyl;
+                        }
+                        0x3B => {
+                            cursor += 1;
+                            yystate = 14;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                45 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.as_bytes().get_unchecked(cursor)
+                        } else {
+                            255
+                        }
+                    };
+                    match yych {
+                        0x30..=0x39 | 0x41..=0x5A | 0x61..=0x7A => {
+                            cursor += 1;
+                            yystate = 46;
+                            continue 'yyl;
+                        }
+                        0x3B => {
+                            cursor += 1;
+                            yystate = 14;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                46 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.as_bytes().get_unchecked(cursor)
+                        } else {
+                            255
+                        }
+                    };
+                    match yych {
+                        0x30..=0x39 | 0x41..=0x5A | 0x61..=0x7A => {
+                            cursor += 1;
+                            yystate = 47;
+                            continue 'yyl;
+                        }
+                        0x3B => {
+                            cursor += 1;
+                            yystate = 14;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                47 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.as_bytes().get_unchecked(cursor)
+                        } else {
+                            255
+                        }
+                    };
+                    match yych {
+                        0x30..=0x39 | 0x41..=0x5A | 0x61..=0x7A => {
+                            cursor += 1;
+                            yystate = 48;
+                            continue 'yyl;
+                        }
+                        0x3B => {
+                            cursor += 1;
+                            yystate = 14;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                48 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.as_bytes().get_unchecked(cursor)
+                        } else {
+                            255
+                        }
+                    };
+                    match yych {
+                        0x30..=0x39 | 0x41..=0x5A | 0x61..=0x7A => {
+                            cursor += 1;
+                            yystate = 49;
+                            continue 'yyl;
+                        }
+                        0x3B => {
+                            cursor += 1;
+                            yystate = 14;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                49 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.as_bytes().get_unchecked(cursor)
+                        } else {
+                            255
+                        }
+                    };
+                    match yych {
+                        0x30..=0x39 | 0x41..=0x5A | 0x61..=0x7A => {
+                            cursor += 1;
+                            yystate = 50;
+                            continue 'yyl;
+                        }
+                        0x3B => {
+                            cursor += 1;
+                            yystate = 14;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                50 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.as_bytes().get_unchecked(cursor)
+                        } else {
+                            255
+                        }
+                    };
+                    match yych {
+                        0x30..=0x39 | 0x41..=0x5A | 0x61..=0x7A => {
+                            cursor += 1;
+                            yystate = 51;
+                            continue 'yyl;
+                        }
+                        0x3B => {
+                            cursor += 1;
+                            yystate = 14;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                51 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.as_bytes().get_unchecked(cursor)
+                        } else {
+                            255
+                        }
+                    };
+                    match yych {
+                        0x30..=0x39 | 0x41..=0x5A | 0x61..=0x7A => {
+                            cursor += 1;
+                            yystate = 52;
+                            continue 'yyl;
+                        }
+                        0x3B => {
+                            cursor += 1;
+                            yystate = 14;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                52 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.as_bytes().get_unchecked(cursor)
+                        } else {
+                            255
+                        }
+                    };
+                    match yych {
+                        0x30..=0x39 | 0x41..=0x5A | 0x61..=0x7A => {
+                            cursor += 1;
+                            yystate = 53;
+                            continue 'yyl;
+                        }
+                        0x3B => {
+                            cursor += 1;
+                            yystate = 14;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                53 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.as_bytes().get_unchecked(cursor)
+                        } else {
+                            255
+                        }
+                    };
+                    match yych {
+                        0x30..=0x39 | 0x41..=0x5A | 0x61..=0x7A => {
+                            cursor += 1;
+                            yystate = 54;
+                            continue 'yyl;
+                        }
+                        0x3B => {
+                            cursor += 1;
+                            yystate = 14;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                54 => {
+                    yych = unsafe {
+                        if cursor < len {
+                            *s.as_bytes().get_unchecked(cursor)
+                        } else {
+                            255
+                        }
+                    };
+                    match yych {
+                        0x3B => {
+                            cursor += 1;
+                            yystate = 14;
+                            continue 'yyl;
+                        }
+                        _ => {
+                            yystate = 5;
+                            continue 'yyl;
+                        }
+                    }
+                }
+                _ => panic!("internal lexer error"),
+            }
+        }
+    }
+}
+
 #[cfg(feature = "phoenix_heex")]
 pub fn phoenix_opening_tag(s: &str) -> Option<usize> {
     let mut cursor = 0;
