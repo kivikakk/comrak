@@ -1205,14 +1205,20 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
 
                 let span = self.source_span(origin, offset..offset + 2, parent_line_offsets);
                 let escaped = self.input[offset + 1..offset + 2].to_string();
-                let text = make_inline(self.arena, NodeValue::Text(escaped.into()), span);
 
                 if self.options.keeps_escaped() {
+                    let char_span =
+                        self.source_span(origin, offset + 1..offset + 2, parent_line_offsets);
+                    let text = make_inline(self.arena, NodeValue::Text(escaped.into()), char_span);
                     let escaped_span = make_inline(self.arena, NodeValue::Escaped, span);
                     escaped_span.append(text);
                     container.append(escaped_span);
                 } else {
-                    container.append(text);
+                    container.append(make_inline(
+                        self.arena,
+                        NodeValue::Text(escaped.into()),
+                        span,
+                    ));
                 }
 
                 offset += 2;
