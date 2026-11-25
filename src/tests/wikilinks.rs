@@ -60,6 +60,66 @@ fn wikilinks_title_escape_chars() {
 }
 
 #[test]
+fn wikilinks_keep_escaped_with_parse_option() {
+    let mut options = Options::default();
+    options.extension.wikilinks_title_after_pipe = true;
+    options.parse.escaped_char_spans = true;
+    let arena = Arena::new();
+    let root = parse_document(&arena, "[[a\\|b]]", &options);
+    let kinds: Vec<_> = root
+        .descendants()
+        .map(|n| n.data().value.xml_node_name())
+        .collect();
+    assert_eq!(
+        kinds,
+        [
+            "document",
+            "paragraph",
+            "wikilink",
+            "text",
+            "escaped",
+            "text",
+            "text"
+        ]
+    );
+}
+
+#[test]
+fn wikilinks_escaped_commonmark_single_part() {
+    for before_pipe in [false, true] {
+        let mut options = Options::default();
+        options.extension.wikilinks_title_after_pipe = !before_pipe;
+        options.extension.wikilinks_title_before_pipe = before_pipe;
+        options.render.escaped_char_spans = true;
+        commonmark("[[a\\|b]]", "[[a\\|b]]\n", Some(&options));
+        commonmark("[[a\\*b]]", "[[a\\*b]]\n", Some(&options));
+        commonmark("[[a\\*b\\\\c]]", "[[a\\*b\\\\c]]\n", Some(&options));
+    }
+}
+
+#[test]
+fn wikilinks_escaped_sourcepos() {
+    assert_ast_match!(
+        [
+            extension.wikilinks_title_after_pipe,
+            render.escaped_char_spans
+        ],
+        "[[a\\|b]]",
+        (document (1:1-1:8) [
+            (paragraph (1:1-1:8) [
+                (wikilink (1:1-1:8) [
+                    (text (1:3-1:3) "a")
+                    (escaped (1:4-1:5) [
+                        (text (1:5-1:5) "|")
+                    ])
+                    (text (1:6-1:6) "b")
+                ])
+            ])
+        ])
+    );
+}
+
+#[test]
 fn wikilinks_supersedes_relaxed_autolinks() {
     html_opts!(
         [

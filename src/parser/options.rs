@@ -1106,6 +1106,12 @@ pub struct Parse<'c> {
     pub sourcepos_chars: bool,
 }
 
+impl Options<'_> {
+    pub(crate) fn keeps_escaped(&self) -> bool {
+        self.parse.escaped_char_spans || self.render.escaped_char_spans
+    }
+}
+
 impl Parse<'_> {
     pub(crate) fn default_info(&self) -> Option<&str> {
         self.default_info_string
