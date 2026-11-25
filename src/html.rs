@@ -1803,7 +1803,7 @@ pub fn render_math_block<T>(
         }
 
         write_opening_tag(context, "div", tag_attributes)?;
-        context.write_str("\n")?;
+        context.lf()?;
         context.escape(&nmb.literal)?;
         context.write_str("</div>")?;
         context.lf()?;

@@ -135,3 +135,16 @@ fn compact_tight_text_beside_heex_block() {
         "<ul><li>a\n<.form>\n</.form>\nb</li></ul>",
     );
 }
+
+#[test]
+fn compact_math_block() {
+    html_opts!(
+        [
+            render.compact_html,
+            extension.math_dollars,
+            extension.math_dollars_block
+        ],
+        "$$\nx\n$$\n",
+        "<div data-math-style=\"display\">x\n</div>",
+    );
+}
