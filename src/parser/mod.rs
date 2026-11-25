@@ -2704,7 +2704,7 @@ where
                             .parse
                             .default_info_string
                             .as_ref()
-                            .map_or(info, |s| s.clone());
+                            .map_or(info, |s| strings::trim_slice(s).to_string());
                     } else {
                         ncb.info = info;
                     }
