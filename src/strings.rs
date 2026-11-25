@@ -1,5 +1,4 @@
 use std::borrow::Cow;
-use std::ptr;
 use std::str;
 
 use crate::ctype::{ispunct, isspace, isspace_char};
@@ -191,22 +190,7 @@ pub fn ltrim_count(line: &str) -> usize {
 }
 
 pub fn remove_from_start(s: &mut String, n: usize) {
-    if n == 0 {
-        return;
-    }
-
-    if !s.is_char_boundary(n) {
-        panic!("remove_from_start results in non UTF-8 string");
-    }
-
-    // SAFETY: we've asserted s[n] is a valid UTF-8 boundary, and we truncate
-    // any duplicated continuation characters.
-    let bytes = unsafe { s.as_bytes_mut() };
-    shift_buf_left(bytes, n);
-    let new_len = bytes.len() - n;
-    // HACK: see shift_buf_left.
-    bytes[new_len] = b'\0';
-    s.truncate(new_len);
+    s.drain(..n);
 }
 
 pub fn trim(line: &mut String) {
@@ -240,30 +224,6 @@ pub fn trim_cow(s: &mut Cow<str>) {
     match s {
         Cow::Borrowed(str) => *str = trim_slice(str),
         Cow::Owned(string) => trim(string),
-    }
-}
-
-// HACK: Using this function safely on a buffer obtained from
-// String::as_bytes_mut() requires care when truncating it.
-//
-// Say the string ends in a multibyte character, i.e. the last byte is a UTF-8
-// continuation byte. That byte will be repeated at the end of the buffer when
-// it's shifted left by one at a time; therefore the truncation point won't be
-// a valid UTF-8 character boundary, and String::truncate will panic. In such
-// cases, set the byte immediately after the retained portion to b'\0' (or any
-// non-continuation byte!).
-fn shift_buf_left(buf: &mut [u8], n: usize) {
-    if n == 0 {
-        return;
-    }
-    assert!(n <= buf.len());
-    let keep = buf.len() - n;
-    // SAFETY: we can copy `keep` bytes from `dst+n` to `dst`, as the full size
-    // of the `dst` buffer is `keep+n`.
-    unsafe {
-        let dst = buf.as_mut_ptr();
-        let src = dst.add(n);
-        ptr::copy(src, dst, keep);
     }
 }
 
@@ -528,10 +488,7 @@ pub fn phoenix_inline_expression(s: &str) -> Option<usize> {
 
 #[cfg(test)]
 pub mod tests {
-    use super::{
-        count_newlines, ltrim, normalize_code, normalize_label, shift_buf_left,
-        split_off_front_matter,
-    };
+    use super::{count_newlines, ltrim, normalize_code, normalize_label, split_off_front_matter};
     use crate::strings::Case;
 
     #[test]
@@ -579,18 +536,6 @@ pub mod tests {
             "Foo BAR"
         );
         assert_eq!(normalize_label("  FooİBAR  ", Case::Preserve), "FooİBAR");
-    }
-
-    #[test]
-    fn shift_buf_left_ok() {
-        let mut b: Vec<u8>;
-
-        b = vec![1, 2, 3, 4, 5, 6];
-        shift_buf_left(&mut b, 1);
-        assert_eq!(b, vec![2, 3, 4, 5, 6, 6]);
-
-        shift_buf_left(&mut b, 2);
-        assert_eq!(b, vec![4, 5, 6, 6, 6, 6]);
     }
 
     #[test]
