@@ -396,7 +396,7 @@ impl Example {
         format!("example-{}", self.number)
     }
 
-    fn options(&self) -> Result<Options<'static>, String> {
+    pub fn options(&self) -> Result<Options<'static>, String> {
         let args = shell_words::split(&self.flags).map_err(|e| e.to_string())?;
         let option_args = OptionArgs::try_parse_from(std::iter::once("comrak".into()).chain(args))
             .map_err(|e| e.to_string())?;
