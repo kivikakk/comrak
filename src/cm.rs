@@ -1283,17 +1283,26 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
         nl: &NodeWikiLink,
         entering: bool,
     ) -> Result<bool, fmt::Error> {
-        let title_is_url = node.first_child().is_some_and(|child| {
-            child.next_sibling().is_none()
-                && matches!(child.data().value, NodeValue::Text(ref t) if *t == nl.url)
-        });
+        let title_is_url = node.first_child().is_some()
+            && node
+                .children()
+                .all(|child| node_matches!(child, NodeValue::Text(_) | NodeValue::Escaped))
+            && node.collect_text() == nl.url;
         if entering {
             if nl.embed {
                 write!(self, "!")?;
             }
             write!(self, "[[")?;
             if title_is_url {
-                self.output(&nl.url, false, Escaping::WikilinkUrl)?;
+                for child in node.children() {
+                    match child.data().value {
+                        NodeValue::Text(ref text) => {
+                            self.output(text, false, Escaping::WikilinkUrl)?
+                        }
+                        NodeValue::Escaped => self.format_escaped(child)?,
+                        _ => unreachable!(),
+                    }
+                }
                 write!(self, "]]")?;
                 return Ok(false);
             }
