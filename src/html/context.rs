@@ -72,6 +72,10 @@ impl<'o, 'c, T> Context<'o, 'c, T> {
         if self.options.render.compact_html {
             return Ok(());
         }
+        self.ensure_lf()
+    }
+
+    pub(super) fn ensure_lf(&mut self) -> fmt::Result {
         if !self.last_was_lf.get() {
             self.write_str("\n")?;
         }

@@ -371,9 +371,9 @@ pub fn format_node_default<T>(
         NodeValue::Document => Ok(ChildRendering::HTML),
         NodeValue::Emph(..) => render_emph(context, node, entering),
         NodeValue::Heading(ref nh) => render_heading(context, node, entering, nh),
-        NodeValue::HtmlBlock(ref nhb) => render_html_block(context, entering, nhb),
+        NodeValue::HtmlBlock(ref nhb) => render_html_block(context, node, entering, nhb),
         #[cfg(feature = "phoenix_heex")]
-        NodeValue::HeexBlock(ref nhb) => render_heex_block(context, entering, nhb),
+        NodeValue::HeexBlock(ref nhb) => render_heex_block(context, node, entering, nhb),
         NodeValue::HtmlInline(ref literal) => render_html_inline(context, entering, literal),
         #[cfg(feature = "phoenix_heex")]
         NodeValue::HeexInline(ref literal) => render_heex_inline(context, entering, literal),
@@ -889,12 +889,13 @@ fn render_heading<T>(
 
 fn render_html_block<T>(
     context: &mut Context<T>,
+    node: Node<'_>,
     entering: bool,
     nhb: &NodeHtmlBlock,
 ) -> Result<ChildRendering, fmt::Error> {
     // No sourcepos.
     if entering {
-        context.cr()?;
+        cr_beside(context, node.preceding_siblings().skip(1))?;
         let literal = &nhb.literal;
         #[allow(deprecated)]
         if context.options.render.escape {
@@ -904,22 +905,56 @@ fn render_html_block<T>(
         } else {
             context.write_str(literal)?;
         }
-        context.cr()?;
+        cr_beside(context, node.following_siblings().skip(1))?;
     }
 
     Ok(ChildRendering::HTML)
 }
 
+fn cr_beside<'a, T>(
+    context: &mut Context<T>,
+    siblings: impl Iterator<Item = Node<'a>>,
+) -> fmt::Result {
+    if next_is_tight_paragraph(siblings) {
+        context.ensure_lf()
+    } else {
+        context.cr()
+    }
+}
+
+fn next_is_tight_paragraph<'a>(mut siblings: impl Iterator<Item = Node<'a>>) -> bool {
+    siblings
+        .find(|sibling| !node_matches!(sibling, NodeValue::MultilineComment(..)))
+        .is_some_and(|sibling| {
+            node_matches!(sibling, NodeValue::Paragraph) && is_tight_paragraph(sibling)
+        })
+}
+
+fn is_tight_paragraph(node: Node<'_>) -> bool {
+    node.parent()
+        .and_then(|n| n.parent())
+        .is_some_and(|n| match n.data().value {
+            NodeValue::List(ref nl) => nl.tight,
+            NodeValue::DescriptionItem(ref ndi) => ndi.tight,
+            _ => false,
+        })
+        || node
+            .parent()
+            .is_some_and(|n| node_matches!(n, NodeValue::DescriptionTerm))
+        || is_sole_grid_table_cell_child(node)
+}
+
 #[cfg(feature = "phoenix_heex")]
 fn render_heex_block<T>(
     context: &mut Context<T>,
+    node: Node<'_>,
     entering: bool,
     nhb: &crate::nodes::NodeHeexBlock,
 ) -> Result<ChildRendering, fmt::Error> {
     if entering {
-        context.cr()?;
+        cr_beside(context, node.preceding_siblings().skip(1))?;
         context.write_str(&nhb.literal)?;
-        context.cr()?;
+        cr_beside(context, node.following_siblings().skip(1))?;
     }
 
     Ok(ChildRendering::HTML)
@@ -1147,20 +1182,7 @@ fn render_paragraph<T>(
         return Ok(ChildRendering::HTML);
     }
 
-    let tight = node
-        .parent()
-        .and_then(|n| n.parent())
-        .is_some_and(|n| match n.data().value {
-            NodeValue::List(ref nl) => nl.tight,
-            NodeValue::DescriptionItem(ref ndi) => ndi.tight,
-            _ => false,
-        })
-        || node
-            .parent()
-            .is_some_and(|n| node_matches!(n, NodeValue::DescriptionTerm))
-        || is_sole_grid_table_cell_child(node);
-
-    if !tight {
+    if !is_tight_paragraph(node) {
         if entering {
             context.cr()?;
             context.write_str("<p")?;
@@ -1178,13 +1200,7 @@ fn render_paragraph<T>(
             context.write_str("</p>")?;
             context.lf()?;
         }
-    } else if entering
-        && node
-            .preceding_siblings()
-            .skip(1)
-            .find(|previous| !node_matches!(previous, NodeValue::MultilineComment(..)))
-            .is_some_and(|previous| node_matches!(previous, NodeValue::Paragraph))
-    {
+    } else if entering && next_is_tight_paragraph(node.preceding_siblings().skip(1)) {
         context.write_str("\n")?;
     }
 

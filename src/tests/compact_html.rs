@@ -85,3 +85,53 @@ fn compact_default_off() {
         "<h1>Hello</h1>\n<p>World.</p>\n",
     );
 }
+
+#[test]
+fn compact_tight_text_beside_html_block() {
+    html_opts!(
+        [render.compact_html],
+        "- a\n  <!-- c -->\n  b\n",
+        "<ul><li>a\n<!-- raw HTML omitted -->\nb</li></ul>",
+    );
+    html_opts!(
+        [render.compact_html, render.r#unsafe],
+        "- a\n  <iframe src=\"x\"></iframe>\n- b\n",
+        "<ul><li>a\n<iframe src=\"x\"></iframe>\n</li><li>b</li></ul>",
+    );
+    html_opts!(
+        [render.compact_html, render.r#unsafe],
+        "- a\n\n  <!-- c -->\n\n  b\n",
+        "<ul><li><p>a</p><!-- c -->\n<p>b</p></li></ul>",
+    );
+}
+
+#[test]
+fn compact_tight_text_beside_escaped_html_block() {
+    #[allow(deprecated)]
+    {
+        html_opts!(
+            [render.compact_html, render.escape],
+            "- a\n  <!-- c -->\n  b\n",
+            "<ul><li>a\n&lt;!-- c --&gt;\nb</li></ul>",
+        );
+    }
+}
+
+#[test]
+fn compact_tight_description_beside_html_block() {
+    html_opts!(
+        [render.compact_html, extension.description_lists],
+        "Term\n: a\n  <!-- c -->\n  b\n",
+        "<dl><dt>Term</dt><dd>a\n<!-- raw HTML omitted -->\nb</dd></dl>",
+    );
+}
+
+#[test]
+#[cfg(feature = "phoenix_heex")]
+fn compact_tight_text_beside_heex_block() {
+    html_opts!(
+        [render.compact_html, extension.phoenix_heex],
+        "- a\n  <.form>\n  </.form>\n  b\n",
+        "<ul><li>a\n<.form>\n</.form>\nb</li></ul>",
+    );
+}
