@@ -887,11 +887,7 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
                     write!(self, "{}", fence_byte as char)?;
                 }
                 if !info.is_empty() {
-                    if self.fenced_code_attributes() {
-                        self.write_str(&ncb.info.replace('{', "\\{"))?;
-                    } else {
-                        self.write_str(&ncb.info)?;
-                    }
+                    self.write_title_info(&ncb.info, false, self.fenced_code_attributes())?;
                 }
                 #[cfg(feature = "attributes")]
                 self.format_attributes(node, self.fenced_code_attributes(), !info.is_empty())?;

@@ -151,6 +151,26 @@ fn commonmark_code_block_fences_when_indent_would_merge(input: &str, cm: &str, e
     html(input, expected);
 }
 
+#[test_case(
+    "```a&amp;amp;b\nx\n```\n",
+    "```a&amp;amp;b\nx\n```\n",
+    "<pre><code class=\"language-a&amp;amp;b\">x\n</code></pre>\n"
+)]
+#[test_case(
+    "```a\\\\*b\nx\n```\n",
+    "```a\\\\*b\nx\n```\n",
+    "<pre><code class=\"language-a\\*b\">x\n</code></pre>\n"
+)]
+#[test_case(
+    "~~~a`b&#10;c\nx\n~~~\n",
+    "~~~a`b&#10;c\nx\n~~~\n",
+    "<pre><code class=\"language-a`b\">x\n</code></pre>\n"
+)]
+fn commonmark_code_block_escapes_info_string(input: &str, cm: &str, expected: &str) {
+    commonmark(input, cm, None);
+    html(input, expected);
+}
+
 #[test]
 fn commonmark_avoids_spurious_backslash() {
     let arena = Arena::new();
