@@ -192,10 +192,10 @@ fn is_unquoted_value_char(c: char) -> bool {
 }
 
 fn push_entity(input: &str, i: usize, value: &mut String) -> usize {
-    match entity::unescape(&input[i + 1..]) {
+    match entity::unescape(&input[i..]) {
         Some((decoded, len)) => {
             value.push_str(&decoded);
-            i + 1 + len
+            i + len
         }
         None => {
             value.push('&');

@@ -631,19 +631,20 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
     }
 
     fn handle_entity(&mut self) -> Node<'a> {
-        self.scanner.pos += 1;
-
         match entity::unescape(&self.input[self.scanner.pos..]) {
-            None => self.make_inline(
-                NodeValue::Text("&".into()),
-                self.scanner.pos - 1,
-                self.scanner.pos - 1,
-            ),
+            None => {
+                self.scanner.pos += 1;
+                self.make_inline(
+                    NodeValue::Text("&".into()),
+                    self.scanner.pos - 1,
+                    self.scanner.pos - 1,
+                )
+            }
             Some((entity, len)) => {
                 self.scanner.pos += len;
                 self.make_inline(
                     NodeValue::Text(entity),
-                    self.scanner.pos - 1 - len,
+                    self.scanner.pos - len,
                     self.scanner.pos - 1,
                 )
             }

@@ -497,6 +497,30 @@ pub fn tasklist(s: &str) -> Option<(usize, &str, std::ops::Range<usize>)> {
 */
 }
 
+pub enum EntityType {
+    Named,
+    Decimal,
+    Hexadecimal,
+}
+
+/*!re2c
+    entity_named = [0-9A-Za-z];
+    entity_dec   = [0-9];
+    entity_hex   = [0-9A-Fa-f];
+*/
+
+pub fn entity(s: &str) -> Option<(EntityType, usize, &str)> {
+    let mut cursor = 0;
+    let mut marker = 0;
+    let len = s.len();
+/*!re2c
+    "&#" entity_dec{1,7}     ";" { return Some((EntityType::Decimal, cursor, &s[2..(cursor - 1)])); }
+    "&#" 'x' entity_hex{1,6} ";" { return Some((EntityType::Hexadecimal, cursor, &s[3..(cursor - 1)])); }
+    "&" entity_named{2,32}   ";" { return Some((EntityType::Named, cursor, &s[1..(cursor - 1)])); }
+    * { return None; }
+*/
+}
+
 #[cfg(feature = "phoenix_heex")]
 pub fn phoenix_opening_tag(s: &str) -> Option<usize> {
     let mut cursor = 0;
