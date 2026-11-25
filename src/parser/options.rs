@@ -1106,6 +1106,15 @@ pub struct Parse<'c> {
     pub sourcepos_chars: bool,
 }
 
+impl Parse<'_> {
+    pub(crate) fn default_info(&self) -> Option<&str> {
+        self.default_info_string
+            .as_deref()
+            .map(crate::strings::trim_slice)
+            .filter(|info| !info.is_empty())
+    }
+}
+
 /// The type of the callback used when a reference link is encountered with no
 /// matching reference.
 ///

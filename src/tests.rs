@@ -20,6 +20,7 @@ mod commonmark;
 mod compact_html;
 mod constructors;
 mod core;
+mod default_info_string;
 mod description_lists;
 mod empty;
 mod escape;

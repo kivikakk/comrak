@@ -2702,9 +2702,8 @@ where
                         ncb.info = self
                             .options
                             .parse
-                            .default_info_string
-                            .as_ref()
-                            .map_or(info, |s| s.clone());
+                            .default_info()
+                            .map_or(info, str::to_string);
                     } else {
                         ncb.info = info;
                     }

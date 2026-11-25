@@ -56,7 +56,7 @@ x
 </span></code></pre>
 ````````````````````````````````
 
-With `--default-info-string`, a fenced code block without an info string takes the default language:
+With [`--default-info-string`](default-info-string.html), a fenced code block without an info string takes the default language:
 
 ```````````````````````````````` example --github-pre-lang --default-info-string rust
 ```
