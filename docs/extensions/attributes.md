@@ -430,7 +430,7 @@ fn main() {}
 </span></code></pre>
 ````````````````````````````````
 
-With `--default-info-string`, a code block whose info string is only an attribute block gets the default language:
+With [`--default-info-string`](../options/default-info-string.html), a code block whose info string is only an attribute block gets the default language:
 
 ```````````````````````````````` example -e fenced-code-attributes --default-info-string rust --attributes --unsafe
 ```{#main}
