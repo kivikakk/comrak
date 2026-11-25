@@ -16,40 +16,24 @@ pub enum Case {
 }
 
 pub fn unescape(s: &mut String) {
-    // SAFETY: we only shift over backslash characters, and always truncate any
-    // continuation characters duplicated as a result of the shifting.
-    let b = unsafe { s.as_bytes_mut() };
+    // SAFETY: we only shift over backslash characters.
+    // All other USVs are passed through.
+    let b = unsafe { s.as_mut_vec() };
     let mut r = 0;
-    let mut prev = None;
-    let mut found = 0;
+    let mut w = 0;
 
     while r < b.len() {
-        if b[r] == b'\\' && r + 1 < b.len() && ispunct(b[r + 1]) {
-            if b[r + 1] == b'\\' {
-                r += 1;
-            }
-
-            if let Some(prev) = prev {
-                let window = &mut b[(prev + 1 - found)..r];
-                shift_buf_left(window, found);
-            }
-            prev = Some(r);
-            found += 1;
+        if b[r] == b'\\' && b.get(r + 1).is_some_and(|c| ispunct(*c)) {
+            r += 1;
         }
+
+        b[w] = b[r];
+
         r += 1;
+        w += 1;
     }
 
-    if let Some(prev) = prev {
-        let window = &mut b[(prev + 1 - found)..r];
-        shift_buf_left(window, found);
-    }
-
-    if found > 0 {
-        let new_size = b.len() - found;
-        // HACK: see shift_buf_left.
-        b[new_size] = b'\0';
-        s.truncate(new_size);
-    }
+    b.truncate(w);
 }
 
 pub fn clean_autolink(mut url: &str, kind: AutolinkType) -> Cow<'_, str> {
