@@ -1,5 +1,4 @@
 use std::borrow::Cow;
-use std::ptr;
 use std::str;
 
 use crate::ctype::{ispunct, isspace, isspace_char};
@@ -16,40 +15,24 @@ pub enum Case {
 }
 
 pub fn unescape(s: &mut String) {
-    // SAFETY: we only shift over backslash characters, and always truncate any
-    // continuation characters duplicated as a result of the shifting.
-    let b = unsafe { s.as_bytes_mut() };
+    // SAFETY: we only shift over backslash characters.
+    // All other USVs are passed through.
+    let b = unsafe { s.as_mut_vec() };
     let mut r = 0;
-    let mut prev = None;
-    let mut found = 0;
+    let mut w = 0;
 
     while r < b.len() {
-        if b[r] == b'\\' && r + 1 < b.len() && ispunct(b[r + 1]) {
-            if b[r + 1] == b'\\' {
-                r += 1;
-            }
-
-            if let Some(prev) = prev {
-                let window = &mut b[(prev + 1 - found)..r];
-                shift_buf_left(window, found);
-            }
-            prev = Some(r);
-            found += 1;
+        if b[r] == b'\\' && b.get(r + 1).is_some_and(|c| ispunct(*c)) {
+            r += 1;
         }
+
+        b[w] = b[r];
+
         r += 1;
+        w += 1;
     }
 
-    if let Some(prev) = prev {
-        let window = &mut b[(prev + 1 - found)..r];
-        shift_buf_left(window, found);
-    }
-
-    if found > 0 {
-        let new_size = b.len() - found;
-        // HACK: see shift_buf_left.
-        b[new_size] = b'\0';
-        s.truncate(new_size);
-    }
+    b.truncate(w);
 }
 
 pub fn clean_autolink(mut url: &str, kind: AutolinkType) -> Cow<'_, str> {
@@ -69,47 +52,46 @@ pub fn clean_autolink(mut url: &str, kind: AutolinkType) -> Cow<'_, str> {
     }
 }
 
+/// Applies whitespace rules to code matched in backtick delimiters:
+/// - Newlines are replaced with whitespace
+/// - One space at the beginning and end are removed when both are present
+///   and the text contains non-space characters
 pub fn normalize_code(v: &str) -> Cow<'_, str> {
-    let b = v.as_bytes();
-    let mut r = String::new();
-    let mut offset = 0;
-    let mut i = 0;
+    let mut starts_with_space = false;
+    let mut ends_with_space = false;
     let mut contains_nonspace = false;
+    let mut contains_newline = false;
 
-    while i < b.len() {
-        match b[i] {
-            b'\n' => {
-                r.push_str(&v[offset..i]);
-                r.push(' ');
-                offset = i + 1;
-            }
+    for (idx, c) in v.bytes().enumerate() {
+        let is_space = c == b' ' || c == b'\n';
+
+        if idx == 0 {
+            starts_with_space = is_space;
+        }
+        if idx + 1 == v.len() {
+            ends_with_space = is_space;
+        }
+
+        match c {
+            b'\n' => contains_newline = true,
             b' ' => {}
             _ => contains_nonspace = true,
-        }
-
-        i += 1
+        };
     }
 
-    if offset == 0 {
-        if contains_nonspace && b[0] == b' ' && b[i - 1] == b' ' {
-            return v[1..i - 1].into();
-        } else {
-            return v.into();
-        }
+    let trimmed = if contains_nonspace && starts_with_space && ends_with_space {
+        &v[1..v.len() - 1]
+    } else {
+        v
+    };
+
+    if contains_newline {
+        // This might end up doing extra work if newlines were only seen at the
+        // start or end of the code fence. ¯\_(ツ)_/¯
+        trimmed.replace('\n', " ").into()
+    } else {
+        trimmed.into()
     }
-
-    r.push_str(&v[offset..i]);
-
-    // SAFETY: we only shift over a space, and we are guaranteed to duplicate a
-    // space in the last byte of the buffer before truncating.
-    let bytes = unsafe { r.as_bytes_mut() };
-    let len = bytes.len();
-    if contains_nonspace && bytes[0] == b' ' && bytes[len - 1] == b' ' {
-        shift_buf_left(bytes, 1);
-        r.truncate(len - 2);
-    }
-
-    r.into()
 }
 
 pub fn remove_trailing_blank_lines(line: &mut String) {
@@ -208,22 +190,7 @@ pub fn ltrim_count(line: &str) -> usize {
 }
 
 pub fn remove_from_start(s: &mut String, n: usize) {
-    if n == 0 {
-        return;
-    }
-
-    if !s.is_char_boundary(n) {
-        panic!("remove_from_start results in non UTF-8 string");
-    }
-
-    // SAFETY: we've asserted s[n] is a valid UTF-8 boundary, and we truncate
-    // any duplicated continuation characters.
-    let bytes = unsafe { s.as_bytes_mut() };
-    shift_buf_left(bytes, n);
-    let new_len = bytes.len() - n;
-    // HACK: see shift_buf_left.
-    bytes[new_len] = b'\0';
-    s.truncate(new_len);
+    s.drain(..n);
 }
 
 pub fn trim(line: &mut String) {
@@ -257,30 +224,6 @@ pub fn trim_cow(s: &mut Cow<str>) {
     match s {
         Cow::Borrowed(str) => *str = trim_slice(str),
         Cow::Owned(string) => trim(string),
-    }
-}
-
-// HACK: Using this function safely on a buffer obtained from
-// String::as_bytes_mut() requires care when truncating it.
-//
-// Say the string ends in a multibyte character, i.e. the last byte is a UTF-8
-// continuation byte. That byte will be repeated at the end of the buffer when
-// it's shifted left by one at a time; therefore the truncation point won't be
-// a valid UTF-8 character boundary, and String::truncate will panic. In such
-// cases, set the byte immediately after the retained portion to b'\0' (or any
-// non-continuation byte!).
-fn shift_buf_left(buf: &mut [u8], n: usize) {
-    if n == 0 {
-        return;
-    }
-    assert!(n <= buf.len());
-    let keep = buf.len() - n;
-    // SAFETY: we can copy `keep` bytes from `dst+n` to `dst`, as the full size
-    // of the `dst` buffer is `keep+n`.
-    unsafe {
-        let dst = buf.as_mut_ptr();
-        let src = dst.add(n);
-        ptr::copy(src, dst, keep);
     }
 }
 
@@ -545,10 +488,7 @@ pub fn phoenix_inline_expression(s: &str) -> Option<usize> {
 
 #[cfg(test)]
 pub mod tests {
-    use super::{
-        count_newlines, ltrim, normalize_code, normalize_label, shift_buf_left,
-        split_off_front_matter,
-    };
+    use super::{count_newlines, ltrim, normalize_code, normalize_label, split_off_front_matter};
     use crate::strings::Case;
 
     #[test]
@@ -596,18 +536,6 @@ pub mod tests {
             "Foo BAR"
         );
         assert_eq!(normalize_label("  FooİBAR  ", Case::Preserve), "FooİBAR");
-    }
-
-    #[test]
-    fn shift_buf_left_ok() {
-        let mut b: Vec<u8>;
-
-        b = vec![1, 2, 3, 4, 5, 6];
-        shift_buf_left(&mut b, 1);
-        assert_eq!(b, vec![2, 3, 4, 5, 6, 6]);
-
-        shift_buf_left(&mut b, 2);
-        assert_eq!(b, vec![4, 5, 6, 6, 6, 6]);
     }
 
     #[test]
