@@ -134,11 +134,11 @@ fn remove_trailing_blank_lines_ix(line: &str) -> usize {
 }
 
 pub fn is_line_end_char(ch: u8) -> bool {
-    matches!(ch, 10 | 13)
+    matches!(ch, b'\n' | b'\r')
 }
 
 pub fn is_space_or_tab(ch: u8) -> bool {
-    matches!(ch, 9 | 32)
+    matches!(ch, b'\t' | b' ')
 }
 
 /// Chop any trailing sequence of `#` characters from an ATX heading line.
