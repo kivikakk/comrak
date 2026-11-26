@@ -269,15 +269,4 @@ With [block IDs](../extensions/ofm-block-ids.html), a heading takes its header I
 
 With [source positions](sourcepos.html#output), the heading's element has a `data-sourcepos` attribute, and the `<a>` that Comrak adds doesn't.
 
-## Differences from github.com
-
-github.com adds header IDs to the Markdown it renders, with the prefix `user-content-`.  Comrak's slugs and suffixes follow the same rules, except in these cases:
-
-* github.com keeps symbols that Unicode counts as alphabetic, such as `Ⓐ`, and removes numbers that aren't decimal digits, such as `²` and `½` ([example 7](#example-7), [example 8](#example-8));
-* github.com keeps the zero-width joiner and zero-width non-joiner, which Comrak removes;
-* github.com leaves an image's description out of the text content, so the slug of the third heading in [example 4](#example-4) is `-title`;
-* github.com removes a line ending inside a heading, rather than making it a space, so the slug in [example 9](#example-9) is `multi-lineheading`;
-* github.com writes an empty `id` for the first heading in [example 12](#example-12), and `-1` for the second, and writes no `id` at all for a third heading with an empty slug; and,
-* with Gemoji shortcodes, github.com makes the slug from the shortcode, not the emoji, so the slug in [example 20](#example-20) is `tada-party`.
-
 [tab]: https://spec.commonmark.org/0.31.2/#tab

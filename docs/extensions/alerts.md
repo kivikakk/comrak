@@ -641,7 +641,7 @@ With [OFM callouts](ofm-callouts.html), the callout syntax takes precedence, so 
 
 ## Differences from GitHub
 
-GitHub's implementation of alerts isn't open source, so this section compares Comrak with what GitHub's Markdown API renders, as of November 2026.  On every example above with only alerts enabled, the two agree on HTML output, except that GitHub:
+GitHub's implementation of alerts isn't open source, so this section compares Comrak with what GitHub's Markdown API renders, as of November 2026.  On every example above with only alerts enabled, the two have the same HTML output, except that GitHub:
 
 * doesn't support alert titles, and renders an alert marker followed by text as a plain block quote ([example 11](#example-11), [example 13](#example-13), [example 30](#example-30));
 * renders an alert with no content as a plain block quote ([example 17](#example-17));

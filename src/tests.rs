@@ -27,6 +27,7 @@ mod escape;
 mod escaped_char_spans;
 mod footnotes;
 mod front_matter;
+mod full_info_string;
 mod fuzz;
 mod greentext;
 #[cfg(feature = "grid_table")]

@@ -1208,7 +1208,7 @@ With [task lists](tasklist.html), a list in a cell may contain task list items. 
 
 ## Differences from Pandoc
 
-[Pandoc](https://pandoc.org) has no equivalent of the [options](#options) above, and its other extensions differ from Comrak's, so the examples under [Options](#options), [Interactions](#interactions), and [Regressions](#regressions) aren't comparable.  On every other example above, Pandoc 3.7 and Comrak agree on HTML table structure, except that Pandoc:
+[Pandoc](https://pandoc.org) has no equivalent of the [options](#options) above, and its other extensions differ from Comrak's, so the examples under [Options](#options), [Interactions](#interactions), and [Regressions](#regressions) aren't comparable.  On every other example above, Pandoc 3.7 and Comrak have the same HTML table structure, except that Pandoc:
 
 * doesn't recognise an indented grid table ([example 36](#example-36));
 * accepts rows narrower or wider than the top border, such as a row with a wide character counted as one column ([example 7](#example-7));

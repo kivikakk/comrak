@@ -31,7 +31,7 @@ use crate::nodes::{
     NodeWikiLink, TableAlignment,
 };
 use crate::parser::options::{AlertStyleType, Options, Plugins};
-use crate::{node_matches, scanners};
+use crate::{node_matches, scanners, strings};
 
 #[doc(hidden)]
 pub use anchorizer::Anchorizer;
@@ -739,7 +739,7 @@ fn render_code_block<T>(
 
 fn split_info_string(info: &str) -> (&str, &str) {
     let lang_end = info.bytes().position(isspace).unwrap_or(info.len());
-    (&info[..lang_end], info[lang_end..].trim())
+    (&info[..lang_end], strings::ltrim_slice(&info[lang_end..]))
 }
 
 type Attributes<'a> = BTreeMap<&'a str, Cow<'a, str>>;

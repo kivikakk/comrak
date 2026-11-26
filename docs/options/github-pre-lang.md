@@ -119,8 +119,6 @@ x
 
 ## Differences from cmark-gfm
 
-[cmark-gfm](https://github.com/github/cmark-gfm), the reference implementation of GitHub Flavored Markdown, has the same option.  It doesn't support `--default-info-string`, code maths or attributes, so those examples aren't comparable.  On every other example above, the two implementations agree on HTML output, except in attribute order.  Comrak writes a code block's attributes in alphabetical order, so `data-meta` comes before `lang` ([example 6](#example-6)), where cmark-gfm writes `lang` first.
-
-github.com writes `<pre lang>` for code in languages it doesn't highlight, with the rest of the info string as `data-meta`.  For languages it does highlight, it replaces the code block's HTML with its own.
+[cmark-gfm](https://github.com/github/cmark-gfm), the reference implementation of GitHub Flavored Markdown, has the same option.  It doesn't support `--default-info-string`, code maths or attributes, so those examples aren't comparable.  On every other example above, the two implementations have the same HTML output, except in attribute order.  Comrak writes a code block's attributes in alphabetical order, so `data-meta` comes before `lang` ([example 6](#example-6)), where cmark-gfm writes `lang` first.
 
 [info string]: https://spec.commonmark.org/0.31.2/#info-string

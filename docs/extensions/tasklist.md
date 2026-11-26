@@ -760,7 +760,7 @@ With `--smart`, inline parsing transforms some punctuation.  Inline parsing come
 
 [cmark-gfm](https://github.com/github/cmark-gfm), the reference implementation of GitHub Flavored Markdown, recognises task list items differently.  It matches the marker against the source line on which a list item's first block opens, before it parses that block's content.  The line must begin with an optional indent, a [list marker], whitespace, and a [task list item marker], followed by a [space] or [tab].  To decide whether the item is [complete], cmark-gfm searches the whole line for `[x]` or `[X]`.
 
-Comrak recognises the marker after it determines block and inline structure, as described in [Syntax](#syntax).  cmark-gfm has no equivalent of the [options](#options) described above.  The two implementations agree on every other example above, except that cmark-gfm:
+Comrak recognises the marker after it determines block and inline structure, as described in [Syntax](#syntax).  cmark-gfm has no equivalent of the [options](#options) described above.  The two implementations have the same every other example above, except that cmark-gfm:
 
 - requires a [space] or [tab] after the marker, on the same line, and doesn't recognise a marker followed by a line break ([example 7](#example-7), [example 8](#example-8)) or a marker that makes up the whole paragraph ([example 9](#example-9), [example 28](#example-28), [example 29](#example-29));
 - requires the marker to be on the same line as the [list marker], and that line to begin with the list marker, which rules out a first block that begins on the next line ([example 18](#example-18)) and a task list inside a [block quote] ([example 33](#example-33));

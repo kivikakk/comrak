@@ -93,6 +93,6 @@ With [strikethrough](../extensions/strikethrough.html), strikethrough inside str
 
 [cmark-gfm](https://github.com/github/cmark-gfm), the reference implementation of GitHub Flavored Markdown, always writes strong emphasis this way, in both its HTML and its CommonMark output.  It has no option for it.  The GFM spec's own examples expect the same: `****foo****` is `<strong>foo</strong>` in the GFM spec, and `<strong><strong>foo</strong></strong>` in [CommonMark 0.31.2](https://spec.commonmark.org/0.31.2/#example-464).
 
-On every example above that uses `--gfm-quirks` or `--gfm`, the two implementations agree on HTML output, except that cmark-gfm gives strong emphasis no source position ([example 7](#example-7)).  github.com writes the same HTML for all of them.
+On every example above that uses `--gfm-quirks` or `--gfm`, the two implementations have the same HTML output, except that cmark-gfm gives strong emphasis no source position ([example 7](#example-7)).  github.com writes the same HTML for all of them.
 
 Comrak added the option in 0.25.0 ([#428](https://github.com/kivikakk/comrak/pull/428)), so that it could support both CommonMark's base spec and GFM's.
