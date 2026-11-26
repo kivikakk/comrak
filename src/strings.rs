@@ -131,6 +131,10 @@ pub fn is_space_or_tab(ch: u8) -> bool {
     matches!(ch, b'\t' | b' ')
 }
 
+fn is_space_or_tab_char(ch: char) -> bool {
+    matches!(ch, '\t' | ' ')
+}
+
 pub fn is_blank_to_line_end(s: &str) -> bool {
     for c in s.bytes() {
         match c {
@@ -153,7 +157,7 @@ pub fn chop_trailing_hashes(mut line: &str) -> (&str, bool) {
     let rpos = line.bytes().rev().position(|ch| ch != b'#');
 
     match rpos {
-        Some(rpos) if rpos > 0 && line[..(size - rpos)].ends_with(isspace_char) => {
+        Some(rpos) if rpos > 0 && line[..(size - rpos)].ends_with(is_space_or_tab_char) => {
             (rtrim_slice(&line[..(size - rpos)]), true)
         }
         _ => (line, false),
