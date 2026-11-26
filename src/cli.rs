@@ -18,7 +18,7 @@ pub struct OptionArgs {
     #[arg(long)]
     pub github_pre_lang: bool,
 
-    /// Include words following the code block info string in a data-meta attribute
+    /// Put the rest of the code block info string, after the first word, in a data-meta attribute
     #[arg(long)]
     pub full_info_string: bool,
 
