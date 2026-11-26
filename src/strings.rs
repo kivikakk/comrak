@@ -108,7 +108,7 @@ fn trailing_blank_lines_pos(line: &str) -> usize {
     let Some(trailing_blank_bytes) = line
         .bytes()
         .rev()
-        .position(|ch| !is_line_end_char(ch) && !is_space_or_tab(ch))
+        .position(|ch| !is_line_end_byte(ch) && !is_space_or_tab(ch))
     else {
         // Input was empty or entirely blank.
         return 0;
@@ -116,14 +116,14 @@ fn trailing_blank_lines_pos(line: &str) -> usize {
 
     let last_nonblank = size - trailing_blank_bytes;
 
-    if let Some(pos) = line[last_nonblank..].bytes().position(is_line_end_char) {
+    if let Some(pos) = line[last_nonblank..].bytes().position(is_line_end_byte) {
         last_nonblank + pos
     } else {
         size
     }
 }
 
-pub fn is_line_end_char(ch: u8) -> bool {
+pub fn is_line_end_byte(ch: u8) -> bool {
     matches!(ch, b'\n' | b'\r')
 }
 
@@ -134,7 +134,7 @@ pub fn is_space_or_tab(ch: u8) -> bool {
 pub fn is_blank_to_line_end(s: &str) -> bool {
     for c in s.bytes() {
         match c {
-            c if is_line_end_char(c) => return true,
+            c if is_line_end_byte(c) => return true,
             c if is_space_or_tab(c) => {}
             _ => return false,
         }

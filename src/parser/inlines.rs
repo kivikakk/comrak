@@ -430,7 +430,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                     self.input[startpos..endpos].into()
                 };
 
-                if self.peek_byte().is_some_and(strings::is_line_end_char) {
+                if self.peek_byte().is_some_and(strings::is_line_end_byte) {
                     let size_before = contents.len();
                     strings::rtrim_cow(&mut contents);
                     endpos -= size_before - contents.len();
