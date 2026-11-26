@@ -151,36 +151,38 @@ pub fn chop_trailing_hashes(mut line: &str) -> (&str, bool) {
     }
 }
 
-pub fn rtrim(line: &mut String) -> usize {
-    let spaces = line
-        .as_bytes()
-        .iter()
-        .rev()
-        .take_while(|&&b| isspace(b))
-        .count();
-    let new_len = line.len() - spaces;
-    line.truncate(new_len);
-    spaces
+pub fn trim(line: &mut String) {
+    ltrim(line);
+    rtrim(line);
 }
 
 pub fn ltrim(line: &mut String) -> usize {
     let spaces = ltrim_count(line);
-    remove_from_start(line, spaces);
+    line.drain(..spaces);
     spaces
 }
 
-#[inline]
+pub fn rtrim(line: &mut String) -> usize {
+    let spaces = rtrim_count(line);
+    line.drain((line.len() - spaces)..);
+    spaces
+}
+
 pub fn ltrim_count(line: &str) -> usize {
-    line.as_bytes().iter().take_while(|&&c| isspace(c)).count()
+    line.bytes()
+        .position(|ch| !isspace(ch))
+        .unwrap_or(line.len())
+}
+
+pub fn rtrim_count(line: &str) -> usize {
+    line.bytes()
+        .rev()
+        .position(|ch| !isspace(ch))
+        .unwrap_or(line.len())
 }
 
 pub fn remove_from_start(s: &mut String, n: usize) {
     s.drain(..n);
-}
-
-pub fn trim(line: &mut String) {
-    ltrim(line);
-    rtrim(line);
 }
 
 pub fn ltrim_slice(i: &str) -> &str {
