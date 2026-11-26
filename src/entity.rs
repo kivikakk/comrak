@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 use std::char;
 use std::cmp::min;
-use std::ops::RangeInclusive;
+use std::ops::Range;
 use std::str;
 
 use crate::scanners::{self, EntityType};
@@ -13,7 +13,7 @@ fn lookup(text: &str) -> Option<&'static str> {
 }
 
 const MAX_CODEPOINT: u32 = 0x11_0000;
-const UTF16_SURROGATE_RANGE: RangeInclusive<u32> = 0xD800..=0xE000; // Likely off by one?
+const UTF16_SURROGATE_RANGE: Range<u32> = 0xD800..0xE000;
 
 fn dec_to_u32(c: u8) -> u32 {
     (c - b'0') as u32
@@ -54,33 +54,27 @@ pub fn unescape(text: &str) -> Option<(Cow<'static, str>, usize)> {
     ))
 }
 
-pub fn unescape_html(src: &str) -> Cow<'_, str> {
-    let size = src.len();
-    let mut i = 0;
-    let mut v = String::with_capacity(size);
-    let mut m = false;
+pub fn unescape_html(mut src: &str) -> String {
+    let mut v = String::with_capacity(src.len());
+    let mut p;
 
-    while i < size {
-        if let Some(pos) = src[i..].find('&') {
-            v.push_str(&src[i..(i + pos)]);
-            i += pos;
-        } else {
-            v.push_str(&src[i..]);
-            break;
-        }
+    while let Some(pos) = src.find('&') {
+        (p, src) = src.split_at(pos);
 
-        match unescape(&src[i..]) {
+        v.push_str(p);
+
+        match unescape(src) {
             Some((entity, size)) => {
                 v.push_str(&entity);
-                i += size;
-                m = true;
+                src = &src[size..];
             }
             None => {
                 v.push('&');
-                i += 1;
+                src = &src[1..];
             }
         }
     }
 
-    if m { v.into() } else { src.into() }
+    v.push_str(src);
+    v
 }

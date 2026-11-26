@@ -317,6 +317,14 @@ fn hex_entity_digit_limit() {
 }
 
 #[test]
+fn utf16_surrogate_range_entity_boundary() {
+    html("&#xDFFE;\n", "<p>\u{FFFD}</p>\n");
+    html("&#xDFFF;\n", "<p>\u{FFFD}</p>\n");
+    html("&#xE000;\n", "<p>\u{E000}</p>\n");
+    html("&#xE001;\n", "<p>\u{E001}</p>\n");
+}
+
+#[test]
 fn tab_indented_fence_in_list_keeps_columns() {
     // The list marker consumes two of the tab's four columns, so the fence
     // offset must be measured in columns. Counting bytes used to under-count
