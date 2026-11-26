@@ -284,14 +284,6 @@ pub fn normalize_label(i: &str, casing: Case) -> String {
     }
 }
 
-#[test]
-fn normalize_label_fold_test() {
-    assert_eq!(normalize_label("Abc   \t\ndef", Case::Preserve), "Abc def");
-    assert_eq!(normalize_label("Abc   \t\ndef", Case::Fold), "abc def");
-    assert_eq!(normalize_label("Straẞe", Case::Preserve), "Straẞe");
-    assert_eq!(normalize_label("Straẞe", Case::Fold), "strasse");
-}
-
 pub fn split_off_front_matter<'s>(mut s: &'s str, delimiter: &str) -> Option<(&'s str, &'s str)> {
     s = trim_start_match(s, "\u{feff}");
 
@@ -522,6 +514,14 @@ pub mod tests {
             "Foo BAR"
         );
         assert_eq!(normalize_label("  FooİBAR  ", Case::Preserve), "FooİBAR");
+    }
+
+    #[test]
+    fn normalize_label_fold_test() {
+        assert_eq!(normalize_label("Abc   \t\ndef", Case::Preserve), "Abc def");
+        assert_eq!(normalize_label("Abc   \t\ndef", Case::Fold), "abc def");
+        assert_eq!(normalize_label("Straẞe", Case::Preserve), "Straẞe");
+        assert_eq!(normalize_label("Straẞe", Case::Fold), "strasse");
     }
 
     #[test]
