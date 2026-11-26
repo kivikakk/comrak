@@ -126,6 +126,17 @@ pub fn is_space_or_tab(ch: u8) -> bool {
     matches!(ch, b'\t' | b' ')
 }
 
+pub fn is_blank_to_line_end(s: &str) -> bool {
+    for c in s.bytes() {
+        match c {
+            c if is_line_end_char(c) => return true,
+            c if is_space_or_tab(c) => {}
+            _ => return false,
+        }
+    }
+    true
+}
+
 /// Chop any trailing sequence of `#` characters from an ATX heading line.
 ///
 /// Returns the possibly-chopped line and a boolean indicating whether
@@ -247,17 +258,6 @@ pub fn clean_title(title: &str) -> Cow<'static, str> {
 
     unescape(&mut b);
     b.into()
-}
-
-pub fn is_blank(s: &str) -> bool {
-    for c in s.as_bytes() {
-        match c {
-            10 | 13 => return true,
-            32 | 9 => (),
-            _ => return false,
-        }
-    }
-    true
 }
 
 pub fn normalize_label(i: &str, casing: Case) -> String {

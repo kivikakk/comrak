@@ -29,7 +29,7 @@ use crate::parser::options::{BrokenLinkReference, WikiLinksMode};
 use crate::parser::shortcodes::NodeShortCode;
 use crate::parser::{AutolinkType, Cancellation, Options, ResolvedReference, autolink};
 use crate::scanners;
-use crate::strings::{self, Case, count_newlines, is_blank};
+use crate::strings::{self, Case, count_newlines, is_blank_to_line_end};
 
 const MAXBACKTICKS: usize = 80;
 const MAX_LINK_LABEL_LENGTH: usize = 1000;
@@ -1878,7 +1878,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             let mut itm = last.inl_text.next_sibling();
             while let Some(it) = itm {
                 match it.data().value {
-                    NodeValue::Text(ref s) if is_blank(s) => (),
+                    NodeValue::Text(ref s) if is_blank_to_line_end(s) => (),
                     _ => {
                         non_blank_found = true;
                         break;

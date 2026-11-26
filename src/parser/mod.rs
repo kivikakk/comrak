@@ -2596,12 +2596,12 @@ where
         }
 
         if pos == 0 {
-            return !strings::is_blank(content);
+            return !strings::is_blank_to_line_end(content);
         }
 
         let (consumed_lines, _) = strings::count_newlines(&content[..pos]);
         strings::remove_from_start(content, pos);
-        let has_content = !strings::is_blank(content);
+        let has_content = !strings::is_blank_to_line_end(content);
         lines.offsets.drain(..consumed_lines);
         let column = lines
             .offsets
