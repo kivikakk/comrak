@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 use std::char;
 use std::cmp::min;
-use std::ops::RangeInclusive;
+use std::ops::Range;
 use std::str;
 
 use crate::scanners::{self, EntityType};
@@ -13,7 +13,7 @@ fn lookup(text: &str) -> Option<&'static str> {
 }
 
 const MAX_CODEPOINT: u32 = 0x11_0000;
-const UTF16_SURROGATE_RANGE: RangeInclusive<u32> = 0xD800..=0xE000; // Likely off by one?
+const UTF16_SURROGATE_RANGE: Range<u32> = 0xD800..0xE000;
 
 fn dec_to_u32(c: u8) -> u32 {
     (c - b'0') as u32
