@@ -356,7 +356,7 @@ With `--smart`, a title's punctuation stays as it is, since a title is plain tex
 
 ## Differences from commonmark-hs
 
-[Pandoc](https://pandoc.org) uses commonmark-hs's wikilinks extensions, so the comparison here is with Pandoc 3.7.  Its other extensions and options differ from Comrak's, so the examples under [Interactions](#interactions), and those with source positions, aren't comparable.  On every other example above, Pandoc and Comrak agree on HTML output, except that Pandoc:
+[Pandoc](https://pandoc.org) uses commonmark-hs's wikilinks extensions, so the comparison here is with Pandoc 3.7.  Its other extensions and options differ from Comrak's, so the examples under [Interactions](#interactions), and those with source positions, aren't comparable.  On every other example above, Pandoc and Comrak have the same HTML output, except that Pandoc:
 
 * splits a wikilink at its first `|`, so a title may contain `|` ([example 9](#example-9));
 * allows `[` in a part ([example 10](#example-10));

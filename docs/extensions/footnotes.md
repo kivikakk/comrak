@@ -621,7 +621,7 @@ A footnote in a paragraph[^1]
 
 ## Differences from cmark-gfm
 
-[cmark-gfm](https://github.com/github/cmark-gfm), the reference implementation of GitHub Flavored Markdown, uses the same footnote design as Comrak.  It doesn't support the [inline footnotes](inline-footnotes.html) or [superscript](superscript-subscript.html) extensions, so those examples aren't comparable.  On every other example above, the two implementations agree on HTML output, except that cmark-gfm:
+[cmark-gfm](https://github.com/github/cmark-gfm), the reference implementation of GitHub Flavored Markdown, uses the same footnote design as Comrak.  It doesn't support the [inline footnotes](inline-footnotes.html) or [superscript](superscript-subscript.html) extensions, so those examples aren't comparable.  On every other example above, the two implementations have the same HTML output, except that cmark-gfm:
 
 * numbers footnotes in the order their first references appear in the source, including references inside footnote definitions wherever those definitions are, such that a footnote referred to from a definition near the top of the document can come first ([example 23](#example-23));
 * lists every footnote with a reference anywhere in the document, even one whose only reference is in a footnote definition that's dropped, such that its backlink leads nowhere ([example 24](#example-24));

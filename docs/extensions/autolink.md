@@ -461,7 +461,7 @@ With [wikilinks](wikilinks.html), a wikilink takes precedence over an autolink i
 
 ## Differences from cmark-gfm
 
-[cmark-gfm](https://github.com/github/cmark-gfm), the reference implementation of GitHub Flavored Markdown, uses the same autolink design as Comrak.  It has no equivalent of [Relaxed autolinks](#relaxed-autolinks), and doesn't support the [wikilinks](wikilinks.html) or [footnotes](footnotes.html) extensions, so those examples aren't comparable.  On every other example above, the two implementations agree on HTML output, except that cmark-gfm:
+[cmark-gfm](https://github.com/github/cmark-gfm), the reference implementation of GitHub Flavored Markdown, uses the same autolink design as Comrak.  It has no equivalent of [Relaxed autolinks](#relaxed-autolinks), and doesn't support the [wikilinks](wikilinks.html) or [footnotes](footnotes.html) extensions, so those examples aren't comparable.  On every other example above, the two implementations have the same HTML output, except that cmark-gfm:
 
 * accepts any [valid domain] after `www.`, with or without a period, so `www.com` is a www autolink ([example 7](#example-7)), and `www.foo@bar.com` is a www autolink rather than an email autolink;
 * checks the domain before removing trailing characters, so a trailing underscore makes a www or URL autolink invalid, even when the underscore closes emphasis ([example 8](#example-8), [example 28](#example-28));

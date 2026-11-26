@@ -274,7 +274,7 @@ Term
 
 ## Differences from cmark-gfm
 
-[cmark-gfm](https://github.com/github/cmark-gfm), the reference implementation of GitHub Flavored Markdown, uses the same strikethrough design as Comrak.  It doesn't support the [subscript](superscript-subscript.html), [CJK-friendly emphasis](cjk-friendly-emphasis.html), or [description lists](description-lists.html) extensions, so those examples aren't comparable.  On every other example above, the two implementations agree on HTML output, except that cmark-gfm gives strikethrough no source position ([example 19](#example-19)).
+[cmark-gfm](https://github.com/github/cmark-gfm), the reference implementation of GitHub Flavored Markdown, uses the same strikethrough design as Comrak.  It doesn't support the [subscript](superscript-subscript.html), [CJK-friendly emphasis](cjk-friendly-emphasis.html), or [description lists](description-lists.html) extensions, so those examples aren't comparable.  On every other example above, the two implementations have the same HTML output, except that cmark-gfm gives strikethrough no source position ([example 19](#example-19)).
 
 cmark-gfm also has a `--strikethrough-double-tilde` option, with which a tilde run of one tilde is literal.  Comrak has no equivalent.
 

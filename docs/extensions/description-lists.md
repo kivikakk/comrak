@@ -743,7 +743,7 @@ apple ^fruit
 
 ## Differences from commonmark-hs
 
-Pandoc's `commonmark` reader uses commonmark-hs.  This section compares Comrak with Pandoc 3.7, run as `pandoc -f commonmark+definition_lists`.  Since Pandoc's other extensions differ from Comrak's, the examples under [Interactions](#interactions) aren't comparable.  On every other example above, the two agree on HTML structure, except that Pandoc:
+Pandoc's `commonmark` reader uses commonmark-hs.  This section compares Comrak with Pandoc 3.7, run as `pandoc -f commonmark+definition_lists`.  Since Pandoc's other extensions differ from Comrak's, the examples under [Interactions](#interactions) aren't comparable.  On every other example above, the two have the same HTML structure, except that Pandoc:
 
 * keeps descriptions tight when a blank line separates two blocks in a description, and writes those blocks' paragraphs without `<p>` elements, which makes them read as one paragraph ([example 14](#example-14), [example 30](#example-30), [example 31](#example-31));
 * keeps a list tight when a blank line separates a description list in a list item from the next block ([example 38](#example-38)); and,
