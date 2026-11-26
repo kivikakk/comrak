@@ -95,42 +95,27 @@ pub fn normalize_code(v: &str) -> Cow<'_, str> {
 }
 
 pub fn remove_trailing_blank_lines(line: &mut String) {
-    line.truncate(remove_trailing_blank_lines_ix(line));
+    line.truncate(trailing_blank_lines_pos(line));
 }
 
 pub fn remove_trailing_blank_lines_slice(line: &str) -> &str {
-    &line[..remove_trailing_blank_lines_ix(line)]
+    &line[..trailing_blank_lines_pos(line)]
 }
 
-fn remove_trailing_blank_lines_ix(line: &str) -> usize {
-    let line_bytes = line.as_bytes();
-    if line.is_empty() {
-        return 0;
+fn trailing_blank_lines_pos(line: &str) -> usize {
+    let size = line.len();
+    let trailing_first_nonblank = line
+        .bytes()
+        .rev()
+        .position(|ch| !is_line_end_char(ch) && !is_space_or_tab(ch))
+        .unwrap_or(size);
+    let last_nonblank = size - trailing_first_nonblank;
+
+    if let Some(pos) = line[last_nonblank..].bytes().position(is_line_end_char) {
+        last_nonblank + pos
+    } else {
+        size
     }
-    let mut i = line.len() - 1;
-    loop {
-        let c = line_bytes[i];
-
-        if c != b' ' && c != b'\t' && !is_line_end_char(c) {
-            break;
-        }
-
-        if i == 0 {
-            return 0;
-        }
-
-        i -= 1;
-    }
-
-    for (i, c) in line_bytes.iter().enumerate().take(line.len()).skip(i) {
-        if !is_line_end_char(*c) {
-            continue;
-        }
-
-        return i;
-    }
-
-    line.len()
 }
 
 pub fn is_line_end_char(ch: u8) -> bool {
