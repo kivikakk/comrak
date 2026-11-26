@@ -104,12 +104,17 @@ pub fn remove_trailing_blank_lines_slice(line: &str) -> &str {
 
 fn trailing_blank_lines_pos(line: &str) -> usize {
     let size = line.len();
-    let trailing_first_nonblank = line
+
+    let Some(trailing_blank_bytes) = line
         .bytes()
         .rev()
         .position(|ch| !is_line_end_char(ch) && !is_space_or_tab(ch))
-        .unwrap_or(size);
-    let last_nonblank = size - trailing_first_nonblank;
+    else {
+        // Input was empty or entirely blank.
+        return 0;
+    };
+
+    let last_nonblank = size - trailing_blank_bytes;
 
     if let Some(pos) = line[last_nonblank..].bytes().position(is_line_end_char) {
         last_nonblank + pos
