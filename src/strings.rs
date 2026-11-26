@@ -144,21 +144,14 @@ pub fn is_blank_to_line_end(s: &str) -> bool {
 pub fn chop_trailing_hashes(mut line: &str) -> (&str, bool) {
     line = rtrim_slice(line);
 
-    let orig_n = line.len() - 1;
-    let mut n = orig_n;
+    let size: usize = line.len();
+    let rpos = line.bytes().rev().position(|ch| ch != b'#');
 
-    let bytes = line.as_bytes();
-    while bytes[n] == b'#' {
-        if n == 0 {
-            return (line, false);
+    match rpos {
+        Some(rpos) if rpos > 0 && line[..(size - rpos)].ends_with(isspace_char) => {
+            (rtrim_slice(&line[..(size - rpos)]), true)
         }
-        n -= 1;
-    }
-
-    if n != orig_n && is_space_or_tab(bytes[n]) {
-        (rtrim_slice(&line[..n]), true)
-    } else {
-        (line, false)
+        _ => (line, false),
     }
 }
 
