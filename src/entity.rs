@@ -54,11 +54,10 @@ pub fn unescape(text: &str) -> Option<(Cow<'static, str>, usize)> {
     ))
 }
 
-pub fn unescape_html(src: &str) -> Cow<'_, str> {
+pub fn unescape_html(src: &str) -> String {
     let size = src.len();
     let mut i = 0;
     let mut v = String::with_capacity(size);
-    let mut m = false;
 
     while i < size {
         if let Some(pos) = src[i..].find('&') {
@@ -73,7 +72,6 @@ pub fn unescape_html(src: &str) -> Cow<'_, str> {
             Some((entity, size)) => {
                 v.push_str(&entity);
                 i += size;
-                m = true;
             }
             None => {
                 v.push('&');
@@ -82,5 +80,5 @@ pub fn unescape_html(src: &str) -> Cow<'_, str> {
         }
     }
 
-    if m { v.into() } else { src.into() }
+    v
 }

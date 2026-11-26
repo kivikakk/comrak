@@ -246,7 +246,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             end_column,
         );
         inl.append(self.make_inline(
-            NodeValue::Text(entity::unescape_html(url).into_owned().into()),
+            NodeValue::Text(entity::unescape_html(url).into()),
             start_column + 1,
             end_column - 1,
         ));
@@ -1191,7 +1191,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         let bytes = self.input.as_bytes();
         let append_text = |range: Range<usize>| {
             if !range.is_empty() {
-                let text = entity::unescape_html(&self.input[range.clone()]).into_owned();
+                let text = entity::unescape_html(&self.input[range.clone()]);
                 let span = self.source_span(origin, range, parent_line_offsets);
                 container.append(make_inline(self.arena, NodeValue::Text(text.into()), span));
             }

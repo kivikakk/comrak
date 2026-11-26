@@ -1101,8 +1101,7 @@ where
         }
 
         let mut info = entity::unescape_html(&line[info_start..info_end]);
-        strings::trim_cow(&mut info);
-        let mut info = info.into_owned();
+        strings::trim(&mut info);
         strings::unescape(&mut info);
 
         let nbd = NodeBlockDirective {
@@ -1208,8 +1207,7 @@ where
 
         // anything remaining on this line is considered an alert title
         let mut title = entity::unescape_html(&line[title_startpos..]);
-        strings::trim_cow(&mut title);
-        let mut title = title.into_owned();
+        strings::trim(&mut title);
         strings::unescape(&mut title);
 
         let na = NodeAlert {
@@ -2694,8 +2692,7 @@ where
                     }
 
                     let mut info = entity::unescape_html(&raw_info);
-                    strings::trim_cow(&mut info);
-                    let mut info = info.into_owned();
+                    strings::trim(&mut info);
                     strings::unescape(&mut info);
 
                     if info.is_empty() {

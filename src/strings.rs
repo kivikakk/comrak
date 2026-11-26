@@ -48,7 +48,7 @@ pub fn clean_autolink(mut url: &str, kind: AutolinkType) -> Cow<'_, str> {
         buf.push_str(&entity::unescape_html(url));
         buf.into()
     } else {
-        entity::unescape_html(url)
+        entity::unescape_html(url).into()
     }
 }
 
@@ -234,7 +234,7 @@ pub fn clean_url(url: &str) -> Cow<'static, str> {
         return "".into();
     }
 
-    let mut b = entity::unescape_html(url).into_owned();
+    let mut b = entity::unescape_html(url);
     unescape(&mut b);
     b.into()
 }
@@ -256,8 +256,7 @@ pub fn clean_title(title: &str) -> Cow<'static, str> {
         entity::unescape_html(&title[1..title_len - 1])
     } else {
         entity::unescape_html(title)
-    }
-    .into_owned();
+    };
 
     unescape(&mut b);
     b.into()
