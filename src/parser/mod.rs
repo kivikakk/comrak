@@ -202,7 +202,7 @@ fn is_math_block_fence(line: &str) -> bool {
         && bytes.get(2).is_none_or(|&b| b != b'$')
         && bytes[2..]
             .iter()
-            .all(|&b| strings::is_space_or_tab(b) || strings::is_line_end_char(b))
+            .all(|&b| strings::is_space_or_tab(b) || strings::is_line_end_byte(b))
 }
 
 /// Convert all byte-based column values in the AST's sourcepos to char-based.
@@ -735,7 +735,7 @@ where
         self.indent = self.first_nonspace_column - self.column;
         self.blank = bytes
             .get(self.first_nonspace)
-            .is_none_or(|&b| strings::is_line_end_char(b));
+            .is_none_or(|&b| strings::is_line_end_byte(b));
     }
 
     fn parse_block_quote_prefix(&mut self, line: &str) -> bool {
@@ -1096,7 +1096,7 @@ where
 
         let info_start = first_nonspace + matched;
         let mut info_end = info_start;
-        while info_end < line.len() && !strings::is_line_end_char(line.as_bytes()[info_end]) {
+        while info_end < line.len() && !strings::is_line_end_byte(line.as_bytes()[info_end]) {
             info_end += 1;
         }
 
@@ -1294,7 +1294,7 @@ where
             blank_after: bytes[end..]
                 .iter()
                 .find(|&&b| !strings::is_space_or_tab(b))
-                .is_none_or(|&b| strings::is_line_end_char(b)),
+                .is_none_or(|&b| strings::is_line_end_byte(b)),
             alert: if self.options.extension.alerts {
                 alert_after_run(line, end, self.first_nonspace_column + end - start)
             } else {
@@ -1568,7 +1568,7 @@ where
 
         let bytes = &line.as_bytes()[self.first_nonspace..];
         let mut end = bytes.len();
-        while end > 0 && strings::is_line_end_char(bytes[end - 1]) {
+        while end > 0 && strings::is_line_end_byte(bytes[end - 1]) {
             end -= 1;
         }
 
@@ -1664,7 +1664,7 @@ where
             let before = &line.as_bytes()[..self.first_nonspace];
             if before
                 .iter()
-                .any(|&b| !strings::is_space_or_tab(b) && !strings::is_line_end_char(b))
+                .any(|&b| !strings::is_space_or_tab(b) && !strings::is_line_end_byte(b))
             {
                 return false;
             }
@@ -1745,7 +1745,7 @@ where
             let before = &line.as_bytes()[..self.first_nonspace];
             if before
                 .iter()
-                .any(|&b| !strings::is_space_or_tab(b) && !strings::is_line_end_char(b))
+                .any(|&b| !strings::is_space_or_tab(b) && !strings::is_line_end_byte(b))
             {
                 return false;
             }
@@ -1918,7 +1918,7 @@ where
             || !matches!(bytes.get(self.first_nonspace), Some(b':' | b'~'))
             || !bytes
                 .get(self.first_nonspace + 1)
-                .is_none_or(|&b| strings::is_space_or_tab(b) || strings::is_line_end_char(b))
+                .is_none_or(|&b| strings::is_space_or_tab(b) || strings::is_line_end_byte(b))
             || !nesting_fits(container)
         {
             return false;
@@ -2082,7 +2082,7 @@ where
         }
 
         let i = self.column - save_column;
-        if !(1..5).contains(&i) || byte_matches(bytes, self.offset, strings::is_line_end_char) {
+        if !(1..5).contains(&i) || byte_matches(bytes, self.offset, strings::is_line_end_byte) {
             self.offset = save_offset;
             self.column = save_column;
             self.partially_consumed_tab = save_partially_consumed_tab;
@@ -2596,12 +2596,12 @@ where
         }
 
         if pos == 0 {
-            return !strings::is_blank(content);
+            return !strings::is_blank_to_line_end(content);
         }
 
         let (consumed_lines, _) = strings::count_newlines(&content[..pos]);
         strings::remove_from_start(content, pos);
-        let has_content = !strings::is_blank(content);
+        let has_content = !strings::is_blank_to_line_end(content);
         lines.offsets.drain(..consumed_lines);
         let column = lines
             .offsets
@@ -2675,7 +2675,7 @@ where
                 } else {
                     let mut pos = 0;
                     while pos < content.len() {
-                        if strings::is_line_end_char(content.as_bytes()[pos]) {
+                        if strings::is_line_end_byte(content.as_bytes()[pos]) {
                             break;
                         }
                         pos += 1;
@@ -3458,7 +3458,7 @@ fn parse_list_marker(
                     return None;
                 }
             }
-            if strings::is_line_end_char(bytes[i]) {
+            if strings::is_line_end_byte(bytes[i]) {
                 return None;
             }
         }
@@ -3517,7 +3517,7 @@ fn parse_list_marker(
                     return None;
                 }
             }
-            if strings::is_line_end_char(bytes[i]) {
+            if strings::is_line_end_byte(bytes[i]) {
                 return None;
             }
         }

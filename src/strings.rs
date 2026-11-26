@@ -95,50 +95,55 @@ pub fn normalize_code(v: &str) -> Cow<'_, str> {
 }
 
 pub fn remove_trailing_blank_lines(line: &mut String) {
-    line.truncate(remove_trailing_blank_lines_ix(line));
+    line.truncate(trailing_blank_lines_pos(line));
 }
 
 pub fn remove_trailing_blank_lines_slice(line: &str) -> &str {
-    &line[..remove_trailing_blank_lines_ix(line)]
+    &line[..trailing_blank_lines_pos(line)]
 }
 
-fn remove_trailing_blank_lines_ix(line: &str) -> usize {
-    let line_bytes = line.as_bytes();
-    if line.is_empty() {
+fn trailing_blank_lines_pos(line: &str) -> usize {
+    let size = line.len();
+
+    let Some(trailing_blank_bytes) = line
+        .bytes()
+        .rev()
+        .position(|ch| !is_line_end_byte(ch) && !is_space_or_tab(ch))
+    else {
+        // Input was empty or entirely blank.
         return 0;
+    };
+
+    let last_nonblank = size - trailing_blank_bytes;
+
+    if let Some(pos) = line[last_nonblank..].bytes().position(is_line_end_byte) {
+        last_nonblank + pos
+    } else {
+        size
     }
-    let mut i = line.len() - 1;
-    loop {
-        let c = line_bytes[i];
-
-        if c != b' ' && c != b'\t' && !is_line_end_char(c) {
-            break;
-        }
-
-        if i == 0 {
-            return 0;
-        }
-
-        i -= 1;
-    }
-
-    for (i, c) in line_bytes.iter().enumerate().take(line.len()).skip(i) {
-        if !is_line_end_char(*c) {
-            continue;
-        }
-
-        return i;
-    }
-
-    line.len()
 }
 
-pub fn is_line_end_char(ch: u8) -> bool {
-    matches!(ch, 10 | 13)
+pub fn is_line_end_byte(ch: u8) -> bool {
+    matches!(ch, b'\n' | b'\r')
 }
 
 pub fn is_space_or_tab(ch: u8) -> bool {
-    matches!(ch, 9 | 32)
+    matches!(ch, b'\t' | b' ')
+}
+
+fn is_space_or_tab_char(ch: char) -> bool {
+    matches!(ch, '\t' | ' ')
+}
+
+pub fn is_blank_to_line_end(s: &str) -> bool {
+    for c in s.bytes() {
+        match c {
+            c if is_line_end_byte(c) => return true,
+            c if is_space_or_tab(c) => {}
+            _ => return false,
+        }
+    }
+    true
 }
 
 /// Chop any trailing sequence of `#` characters from an ATX heading line.
@@ -148,54 +153,49 @@ pub fn is_space_or_tab(ch: u8) -> bool {
 pub fn chop_trailing_hashes(mut line: &str) -> (&str, bool) {
     line = rtrim_slice(line);
 
-    let orig_n = line.len() - 1;
-    let mut n = orig_n;
+    let size: usize = line.len();
+    let rpos = line.bytes().rev().position(|ch| ch != b'#');
 
-    let bytes = line.as_bytes();
-    while bytes[n] == b'#' {
-        if n == 0 {
-            return (line, false);
+    match rpos {
+        Some(rpos) if rpos > 0 && line[..(size - rpos)].ends_with(is_space_or_tab_char) => {
+            (rtrim_slice(&line[..(size - rpos)]), true)
         }
-        n -= 1;
+        _ => (line, false),
     }
-
-    if n != orig_n && is_space_or_tab(bytes[n]) {
-        (rtrim_slice(&line[..n]), true)
-    } else {
-        (line, false)
-    }
-}
-
-pub fn rtrim(line: &mut String) -> usize {
-    let spaces = line
-        .as_bytes()
-        .iter()
-        .rev()
-        .take_while(|&&b| isspace(b))
-        .count();
-    let new_len = line.len() - spaces;
-    line.truncate(new_len);
-    spaces
-}
-
-pub fn ltrim(line: &mut String) -> usize {
-    let spaces = ltrim_count(line);
-    remove_from_start(line, spaces);
-    spaces
-}
-
-#[inline]
-pub fn ltrim_count(line: &str) -> usize {
-    line.as_bytes().iter().take_while(|&&c| isspace(c)).count()
-}
-
-pub fn remove_from_start(s: &mut String, n: usize) {
-    s.drain(..n);
 }
 
 pub fn trim(line: &mut String) {
     ltrim(line);
     rtrim(line);
+}
+
+pub fn ltrim(line: &mut String) -> usize {
+    let spaces = ltrim_count(line);
+    line.drain(..spaces);
+    spaces
+}
+
+pub fn rtrim(line: &mut String) -> usize {
+    let spaces = rtrim_count(line);
+    line.drain((line.len() - spaces)..);
+    spaces
+}
+
+pub fn ltrim_count(line: &str) -> usize {
+    line.bytes()
+        .position(|ch| !isspace(ch))
+        .unwrap_or(line.len())
+}
+
+pub fn rtrim_count(line: &str) -> usize {
+    line.bytes()
+        .rev()
+        .position(|ch| !isspace(ch))
+        .unwrap_or(line.len())
+}
+
+pub fn remove_from_start(s: &mut String, n: usize) {
+    s.drain(..n);
 }
 
 pub fn ltrim_slice(i: &str) -> &str {
@@ -262,17 +262,6 @@ pub fn clean_title(title: &str) -> Cow<'static, str> {
     b.into()
 }
 
-pub fn is_blank(s: &str) -> bool {
-    for c in s.as_bytes() {
-        match c {
-            10 | 13 => return true,
-            32 | 9 => (),
-            _ => return false,
-        }
-    }
-    true
-}
-
 pub fn normalize_label(i: &str, casing: Case) -> String {
     let i = trim_slice(i);
 
@@ -295,14 +284,6 @@ pub fn normalize_label(i: &str, casing: Case) -> String {
     } else {
         v
     }
-}
-
-#[test]
-fn normalize_label_fold_test() {
-    assert_eq!(normalize_label("Abc   \t\ndef", Case::Preserve), "Abc def");
-    assert_eq!(normalize_label("Abc   \t\ndef", Case::Fold), "abc def");
-    assert_eq!(normalize_label("Straẞe", Case::Preserve), "Straẞe");
-    assert_eq!(normalize_label("Straẞe", Case::Fold), "strasse");
 }
 
 pub fn split_off_front_matter<'s>(mut s: &'s str, delimiter: &str) -> Option<(&'s str, &'s str)> {
@@ -535,6 +516,14 @@ pub mod tests {
             "Foo BAR"
         );
         assert_eq!(normalize_label("  FooİBAR  ", Case::Preserve), "FooİBAR");
+    }
+
+    #[test]
+    fn normalize_label_fold_test() {
+        assert_eq!(normalize_label("Abc   \t\ndef", Case::Preserve), "Abc def");
+        assert_eq!(normalize_label("Abc   \t\ndef", Case::Fold), "abc def");
+        assert_eq!(normalize_label("Straẞe", Case::Preserve), "Straẞe");
+        assert_eq!(normalize_label("Straẞe", Case::Fold), "strasse");
     }
 
     #[test]

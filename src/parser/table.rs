@@ -11,7 +11,7 @@ use crate::nodes::{
 use crate::parser::Parser;
 use crate::parser::inlines::make_inline;
 use crate::scanners;
-use crate::strings::{count_newlines, is_line_end_char, is_space_or_tab, newlines_of, trim_cow};
+use crate::strings::{count_newlines, is_line_end_byte, is_space_or_tab, newlines_of, trim_cow};
 
 // Floor for Parser::max_autocompleted_cells.
 pub(crate) const MAX_AUTOCOMPLETED_CELLS: usize = 500_000;
@@ -373,7 +373,7 @@ fn try_inserting_table_header_paragraph<'a>(
             .iter()
             .rev()
             .skip(newlines_of(preface))
-            .take_while(|&&c| !is_line_end_char(c))
+            .take_while(|&&c| !is_line_end_byte(c))
             .count();
 
     container_ast.sourcepos.start.line += newlines;
