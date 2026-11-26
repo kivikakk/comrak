@@ -556,7 +556,7 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
                 self.format_text(literal, node, entering, !text_in_cell)?
             }
             NodeValue::LineBreak => self.format_line_break(entering, next_is_block)?,
-            NodeValue::SoftBreak => self.format_soft_break(entering)?,
+            NodeValue::SoftBreak => self.format_soft_break(entering, next_is_block)?,
             NodeValue::Code(ref code) => self.format_code(node, &code.literal, entering)?,
             NodeValue::HtmlInline(ref literal) => self.format_html_inline(literal, entering)?,
             #[cfg(feature = "phoenix_heex")]
@@ -1039,7 +1039,7 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
 
     fn format_line_break(&mut self, entering: bool, next_is_block: bool) -> fmt::Result {
         if entering {
-            if !self.options.render.hardbreaks && !next_is_block {
+            if !next_is_block {
                 // If the next element is a block, a backslash means a
                 // literal backslash instead of a line break. In this case
                 // we can just skip the line break since it's meaningless
@@ -1052,13 +1052,13 @@ impl<'a, 'o, 'c, 'w> CommonMarkFormatter<'a, 'o, 'c, 'w> {
         Ok(())
     }
 
-    fn format_soft_break(&mut self, entering: bool) -> fmt::Result {
+    fn format_soft_break(&mut self, entering: bool, next_is_block: bool) -> fmt::Result {
+        if self.options.render.hardbreaks {
+            return self.format_line_break(entering, next_is_block);
+        }
         if entering {
-            if !self.no_linebreaks && self.width == 0 && !self.options.render.hardbreaks {
+            if !self.no_linebreaks && self.width == 0 {
                 self.cr();
-                self.lazy_line = self.lazy_prefix();
-            } else if self.options.render.hardbreaks {
-                self.output("\n", true, Escaping::Literal)?;
                 self.lazy_line = self.lazy_prefix();
             } else {
                 self.output(" ", true, Escaping::Literal)?;
@@ -1814,6 +1814,10 @@ const MINIMIZE_BUDGET: usize = 1 << 22;
 fn minimize_commonmark(text: &mut String, original_options: &Options) {
     let mut options_without = original_options.clone();
     options_without.render.experimental_minimize_commonmark = false;
+    if options_without.render.hardbreaks {
+        options_without.render.hardbreaks = false;
+        options_without.render.width = 0;
+    }
 
     let ixs: Vec<usize> = text
         .as_bytes()
