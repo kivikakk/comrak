@@ -228,7 +228,7 @@ The option changes the positions in the AST itself: a program that reads the AST
 In HTML output, each element that Comrak writes for a node has a `data-sourcepos` attribute.  These don't:
 
 * raw HTML, which Comrak writes as it is;
-* text and soft line breaks, which don't have elements of their own; and,
+* text and soft line breaks, which don't have elements of their own (with [`--hardbreaks`](hardbreaks.html), a soft line break's `<br />` does have one); and,
 * elements that Comrak adds around or beside a node's own element, such as the `<code>` inside a code block's `<pre>`, a table's `<thead>` and `<tbody>`, or an alert's title.
 
 ```````````````````````````````` example --sourcepos --unsafe
