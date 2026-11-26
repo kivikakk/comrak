@@ -1200,7 +1200,8 @@ pub struct Render {
     #[cfg_attr(feature = "bon", builder(default))]
     pub github_pre_lang: bool,
 
-    /// Enable full info strings for code blocks
+    /// The rest of a fenced code block's info string, after its first word, is
+    /// written in the `data-meta` attribute.
     ///
     /// ```rust
     /// # use comrak::{markdown_to_html, Options};
@@ -1209,9 +1210,8 @@ pub struct Render {
     ///            "<pre><code class=\"language-rust\">fn hello();\n</code></pre>\n");
     ///
     /// options.render.full_info_string = true;
-    /// let html = markdown_to_html("``` rust extra info\nfn hello();\n```\n", &options);
-    /// eprintln!("{}", html);
-    /// assert!(html.contains(r#"data-meta="extra info""#));
+    /// assert_eq!(markdown_to_html("``` rust extra info\nfn hello();\n```\n", &options),
+    ///            "<pre><code class=\"language-rust\" data-meta=\"extra info\">fn hello();\n</code></pre>\n");
     /// ```
     #[cfg_attr(feature = "bon", builder(default))]
     pub full_info_string: bool,

@@ -32,6 +32,7 @@ mod fuzz;
 mod greentext;
 #[cfg(feature = "grid_table")]
 mod grid_table;
+mod hardbreaks;
 mod header_id_prefix;
 mod highlight;
 #[path = "tests/html.rs"]
